@@ -1,0 +1,1140 @@
+-- Aimbot LocalScript for StarterPlayerScripts
+-- Complete, self-contained, ready-to-run
+-- All code is client-side only
+-- Small execution delay added to reduce instant detection on some games
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- ==================== EXECUTION DELAY (Reduces instant detection risk) ====================
+task.wait(math.random(35, 85) / 100) -- 0.35s to 0.85s random delay before initializing
+
+-- ==================== DISCLAIMER / TERMS POPUP ====================
+local function showDisclaimer()
+	local disclaimerGui = Instance.new("ScreenGui")
+	disclaimerGui.Name = "DisclaimerUI"
+	disclaimerGui.ResetOnSpawn = false
+	disclaimerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	disclaimerGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 420, 0, 220)
+	frame.Position = UDim2.new(0.5, -210, 0.5, -110)
+	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	frame.BackgroundTransparency = 0.1
+	frame.BorderSizePixel = 0
+	frame.Parent = disclaimerGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = frame
+
+	local welcomeLabel = Instance.new("TextLabel")
+	welcomeLabel.Size = UDim2.new(1, -40, 0, 60)
+	welcomeLabel.Position = UDim2.new(0, 20, 0, 20)
+	welcomeLabel.BackgroundTransparency = 1
+	welcomeLabel.Text = "Welcome, and thank you for choosing my script. I hope they enhance your experience. Have fun, play smart, and stay safe."
+	welcomeLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+	welcomeLabel.TextSize = 15
+	welcomeLabel.Font = Enum.Font.Gotham
+	welcomeLabel.TextWrapped = true
+	welcomeLabel.Parent = frame
+
+	local termsLabel = Instance.new("TextLabel")
+	termsLabel.Size = UDim2.new(1, -40, 0, 50)
+	termsLabel.Position = UDim2.new(0, 20, 0, 85)
+	termsLabel.BackgroundTransparency = 1
+	termsLabel.Text = "Please acknowledge that using scripts carries inherent risks, and you are doing so entirely at your own risk."
+	termsLabel.TextColor3 = Color3.fromRGB(255, 70, 70) -- Bright red to make it stand out
+	termsLabel.TextSize = 14
+	termsLabel.Font = Enum.Font.GothamBold
+	termsLabel.TextWrapped = true
+	termsLabel.Parent = frame
+
+	local usernameLabel = Instance.new("TextLabel")
+	usernameLabel.Size = UDim2.new(1, -40, 0, 22)
+	usernameLabel.Position = UDim2.new(0, 20, 0, 140)
+	usernameLabel.BackgroundTransparency = 1
+	usernameLabel.Text = "mmnwd"
+	usernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	usernameLabel.TextSize = 14
+	usernameLabel.Font = Enum.Font.GothamBold
+	usernameLabel.TextXAlignment = Enum.TextXAlignment.Center
+	usernameLabel.Parent = frame
+
+	local acceptBtn = Instance.new("TextButton")
+	acceptBtn.Size = UDim2.new(0, 160, 0, 36)
+	acceptBtn.Position = UDim2.new(0, 40, 1, -50)
+	acceptBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 80)
+	acceptBtn.Text = "Accept"
+	acceptBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	acceptBtn.TextSize = 16
+	acceptBtn.Font = Enum.Font.GothamBold
+	acceptBtn.Parent = frame
+
+	local acceptCorner = Instance.new("UICorner")
+	acceptCorner.CornerRadius = UDim.new(0, 8)
+	acceptCorner.Parent = acceptBtn
+
+	local declineBtn = Instance.new("TextButton")
+	declineBtn.Size = UDim2.new(0, 160, 0, 36)
+	declineBtn.Position = UDim2.new(1, -200, 1, -50)
+	declineBtn.BackgroundColor3 = Color3.fromRGB(160, 50, 50)
+	declineBtn.Text = "Decline"
+	declineBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	declineBtn.TextSize = 16
+	declineBtn.Font = Enum.Font.GothamBold
+	declineBtn.Parent = frame
+
+	local declineCorner = Instance.new("UICorner")
+	declineCorner.CornerRadius = UDim.new(0, 8)
+	declineCorner.Parent = declineBtn
+
+	local accepted = false
+
+	acceptBtn.MouseButton1Click:Connect(function()
+		accepted = true
+		disclaimerGui:Destroy()
+	end)
+
+	declineBtn.MouseButton1Click:Connect(function()
+		disclaimerGui:Destroy()
+		LocalPlayer:Kick("You declined the terms.")
+	end)
+
+	-- Wait until user makes a choice
+	while not accepted and disclaimerGui.Parent do
+		task.wait()
+	end
+
+	return accepted
+end
+
+local userAccepted = showDisclaimer()
+if not userAccepted then
+	return -- Stop script if declined
+end
+
+-- ==================== CONFIG & STATE ====================
+local isShutDown = false
+local masterEnabled = false
+local alwaysOnEnabled = false
+local keybindEnabled = false
+local selectedKeybind = Enum.KeyCode.LeftShift
+local holdingKeybind = false
+local minimizeKey = Enum.KeyCode.X -- Changeable minimize key
+local fovRadius = 100
+local smoothness = 0.25
+local showFovCircle = true
+local wallCheckEnabled = false
+
+-- Wallhack variables
+local wallhackEnabled = false
+local wallhackKey = Enum.KeyCode.Q -- Default Wallhack bind
+local holdingWallhackKey = false
+local wallhackHighlights = {} -- Stores Highlight instances
+local wallhackNameTags = {}   -- Stores BillboardGui name tags
+
+local connections = {} -- For cleanup
+local targetPart = nil
+
+-- ==================== UI CREATION ====================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AimbotUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main draggable frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 260, 0, 370)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -145)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 1
+mainFrame.BorderColor3 = Color3.fromRGB(60, 60, 70)
+mainFrame.Parent = screenGui
+
+-- Rounded corners
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.Parent = mainFrame
+
+-- Title bar (draggable)
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 32)
+titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -40, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "MMNWD Suite v6.3"
+titleLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+-- Shutdown button (X)
+local shutdownBtn = Instance.new("TextButton")
+shutdownBtn.Name = "ShutdownBtn"
+shutdownBtn.Size = UDim2.new(0, 28, 0, 28)
+shutdownBtn.Position = UDim2.new(1, -32, 0, 2)
+shutdownBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+shutdownBtn.Text = "✕"
+shutdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+shutdownBtn.TextSize = 16
+shutdownBtn.Font = Enum.Font.GothamBold
+shutdownBtn.Parent = titleBar
+
+local shutdownCorner = Instance.new("UICorner")
+shutdownCorner.CornerRadius = UDim.new(0, 6)
+shutdownCorner.Parent = shutdownBtn
+
+-- Content container
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Size = UDim2.new(1, -20, 1, -42)
+content.Position = UDim2.new(0, 10, 0, 38)
+content.BackgroundTransparency = 1
+content.Parent = mainFrame
+
+-- Helper function for hover effects
+local function applyHoverEffect(button, normalColor, hoverColor)
+	button.MouseEnter:Connect(function()
+		if not isShutDown then button.BackgroundColor3 = hoverColor end
+	end)
+	button.MouseLeave:Connect(function()
+		if not isShutDown then button.BackgroundColor3 = normalColor end
+	end)
+end
+
+-- ==================== MASTER TOGGLE ====================
+local masterBtn = Instance.new("TextButton")
+masterBtn.Name = "MasterToggle"
+masterBtn.Size = UDim2.new(1, 0, 0, 36)
+masterBtn.Position = UDim2.new(0, 0, 0, 0)
+masterBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+masterBtn.Text = "▶ AIMBOT OFF"
+masterBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+masterBtn.TextSize = 15
+masterBtn.Font = Enum.Font.GothamBold
+masterBtn.Parent = content
+
+local masterCorner = Instance.new("UICorner")
+masterCorner.CornerRadius = UDim.new(0, 8)
+masterCorner.Parent = masterBtn
+
+applyHoverEffect(masterBtn, Color3.fromRGB(60, 60, 65), Color3.fromRGB(80, 80, 85))
+
+-- ==================== ACTIVATION MODES (Two Buttons) ====================
+local alwaysOnBtn = Instance.new("TextButton")
+alwaysOnBtn.Name = "AlwaysOnToggle"
+alwaysOnBtn.Size = UDim2.new(0.48, 0, 0, 32)
+alwaysOnBtn.Position = UDim2.new(0, 0, 0, 44)
+alwaysOnBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+alwaysOnBtn.Text = "⚡ Always On"
+alwaysOnBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+alwaysOnBtn.TextSize = 14
+alwaysOnBtn.Font = Enum.Font.Gotham
+alwaysOnBtn.Parent = content
+
+local alwaysOnCorner = Instance.new("UICorner")
+alwaysOnCorner.CornerRadius = UDim.new(0, 6)
+alwaysOnCorner.Parent = alwaysOnBtn
+
+local keybindBtn = Instance.new("TextButton")
+keybindBtn.Name = "KeybindToggle"
+keybindBtn.Size = UDim2.new(0.48, 0, 0, 32)
+keybindBtn.Position = UDim2.new(0.52, 0, 0, 44)
+keybindBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+keybindBtn.Text = "⌨️ Keybind: Shift"
+keybindBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+keybindBtn.TextSize = 14
+keybindBtn.Font = Enum.Font.Gotham
+keybindBtn.Parent = content
+
+local keybindCorner = Instance.new("UICorner")
+keybindCorner.CornerRadius = UDim.new(0, 6)
+keybindCorner.Parent = keybindBtn
+
+applyHoverEffect(alwaysOnBtn, Color3.fromRGB(60, 60, 65), Color3.fromRGB(80, 80, 85))
+applyHoverEffect(keybindBtn, Color3.fromRGB(60, 60, 65), Color3.fromRGB(80, 80, 85))
+
+-- "Selected" indicator label
+local selectedLabel = Instance.new("TextLabel")
+selectedLabel.Size = UDim2.new(0, 70, 0, 16)
+selectedLabel.BackgroundTransparency = 1
+selectedLabel.Text = "Selected"
+selectedLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+selectedLabel.TextSize = 11
+selectedLabel.Font = Enum.Font.GothamBold
+selectedLabel.Visible = false
+selectedLabel.Parent = content
+
+-- ==================== FOV SLIDER ====================
+local fovLabel = Instance.new("TextLabel")
+fovLabel.Size = UDim2.new(1, 0, 0, 20)
+fovLabel.Position = UDim2.new(0, 0, 0, 84)
+fovLabel.BackgroundTransparency = 1
+fovLabel.Text = "FOV 100"
+fovLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+fovLabel.TextSize = 13
+fovLabel.Font = Enum.Font.Gotham
+fovLabel.Parent = content
+
+local fovTrack = Instance.new("Frame")
+fovTrack.Size = UDim2.new(1, 0, 0, 6)
+fovTrack.Position = UDim2.new(0, 0, 0, 108)
+fovTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+fovTrack.Parent = content
+
+local fovTrackCorner = Instance.new("UICorner")
+fovTrackCorner.CornerRadius = UDim.new(1, 0)
+fovTrackCorner.Parent = fovTrack
+
+local fovThumb = Instance.new("Frame")
+fovThumb.Size = UDim2.new(0, 16, 0, 16)
+fovThumb.Position = UDim2.new(0.5, -8, 0.5, -8) -- Will be updated
+fovThumb.BackgroundColor3 = Color3.fromRGB(0, 200, 120)
+fovThumb.Parent = fovTrack
+
+local fovThumbCorner = Instance.new("UICorner")
+fovThumbCorner.CornerRadius = UDim.new(1, 0)
+fovThumbCorner.Parent = fovThumb
+
+-- ==================== SMOOTHNESS SLIDER ====================
+local smoothLabel = Instance.new("TextLabel")
+smoothLabel.Size = UDim2.new(1, 0, 0, 20)
+smoothLabel.Position = UDim2.new(0, 0, 0, 122)
+smoothLabel.BackgroundTransparency = 1
+smoothLabel.Text = "Smoothness 0.25"
+smoothLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+smoothLabel.TextSize = 13
+smoothLabel.Font = Enum.Font.Gotham
+smoothLabel.Parent = content
+
+local smoothTrack = Instance.new("Frame")
+smoothTrack.Size = UDim2.new(1, 0, 0, 6)
+smoothTrack.Position = UDim2.new(0, 0, 0, 146)
+smoothTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+smoothTrack.Parent = content
+
+local smoothTrackCorner = Instance.new("UICorner")
+smoothTrackCorner.CornerRadius = UDim.new(1, 0)
+smoothTrackCorner.Parent = smoothTrack
+
+local smoothThumb = Instance.new("Frame")
+smoothThumb.Size = UDim2.new(0, 16, 0, 16)
+smoothThumb.Position = UDim2.new(0.25, -8, 0.5, -8)
+smoothThumb.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+smoothThumb.Parent = smoothTrack
+
+local smoothThumbCorner = Instance.new("UICorner")
+smoothThumbCorner.CornerRadius = UDim.new(1, 0)
+smoothThumbCorner.Parent = smoothThumb
+
+-- ==================== SHOW FOV CIRCLE CHECKBOX ====================
+local checkboxFrame = Instance.new("Frame")
+checkboxFrame.Size = UDim2.new(1, 0, 0, 28)
+checkboxFrame.Position = UDim2.new(0, 0, 0, 162)
+checkboxFrame.BackgroundTransparency = 1
+checkboxFrame.Parent = content
+
+local checkbox = Instance.new("TextButton")
+checkbox.Size = UDim2.new(0, 20, 0, 20)
+checkbox.Position = UDim2.new(0, 0, 0, 4)
+checkbox.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+checkbox.Text = "✓"
+checkbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+checkbox.TextSize = 14
+checkbox.Font = Enum.Font.GothamBold
+checkbox.Parent = checkboxFrame
+
+local checkboxCorner = Instance.new("UICorner")
+checkboxCorner.CornerRadius = UDim.new(0, 4)
+checkboxCorner.Parent = checkbox
+
+local checkboxLabel = Instance.new("TextLabel")
+checkboxLabel.Size = UDim2.new(1, -28, 1, 0)
+checkboxLabel.Position = UDim2.new(0, 28, 0, 0)
+checkboxLabel.BackgroundTransparency = 1
+checkboxLabel.Text = "Show FOV Circle"
+checkboxLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+checkboxLabel.TextSize = 13
+checkboxLabel.Font = Enum.Font.Gotham
+checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
+checkboxLabel.Parent = checkboxFrame
+
+-- ==================== MINIMIZE KEY CHANGER ====================
+local minimizeKeyBtn = Instance.new("TextButton")
+minimizeKeyBtn.Name = "MinimizeKeyBtn"
+minimizeKeyBtn.Size = UDim2.new(1, 0, 0, 28)
+minimizeKeyBtn.Position = UDim2.new(0, 0, 0, 290)
+minimizeKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+minimizeKeyBtn.Text = "Minimize Key: X"
+minimizeKeyBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+minimizeKeyBtn.TextSize = 13
+minimizeKeyBtn.Font = Enum.Font.Gotham
+minimizeKeyBtn.Parent = content
+
+local minimizeKeyCorner = Instance.new("UICorner")
+minimizeKeyCorner.CornerRadius = UDim.new(0, 6)
+minimizeKeyCorner.Parent = minimizeKeyBtn
+
+applyHoverEffect(minimizeKeyBtn, Color3.fromRGB(50, 50, 55), Color3.fromRGB(70, 70, 75))
+
+-- Minimize key change logic
+minimizeKeyBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	minimizeKeyBtn.Text = "Press new key..."
+	minimizeKeyBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 120)
+
+	local connection
+	connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			minimizeKey = input.KeyCode
+			minimizeKeyBtn.Text = "Minimize Key: " .. minimizeKey.Name
+			minimizeKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+			connection:Disconnect()
+		end
+	end)
+end)
+
+-- ==================== WALLCHECK BUTTON ====================
+local wallCheckBtn = Instance.new("TextButton")
+wallCheckBtn.Name = "WallCheckToggle"
+wallCheckBtn.Size = UDim2.new(1, 0, 0, 32)
+wallCheckBtn.Position = UDim2.new(0, 0, 0, 194)
+wallCheckBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+wallCheckBtn.Text = "🧱 Wallcheck OFF"
+wallCheckBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+wallCheckBtn.TextSize = 14
+wallCheckBtn.Font = Enum.Font.Gotham
+wallCheckBtn.Parent = content
+
+local wallCheckCorner = Instance.new("UICorner")
+wallCheckCorner.CornerRadius = UDim.new(0, 6)
+wallCheckCorner.Parent = wallCheckBtn
+
+applyHoverEffect(wallCheckBtn, Color3.fromRGB(60, 60, 65), Color3.fromRGB(80, 80, 85))
+
+-- ==================== WALLHACK BUTTONS ====================
+local wallhackBtn = Instance.new("TextButton")
+wallhackBtn.Name = "WallhackToggle"
+wallhackBtn.Size = UDim2.new(1, 0, 0, 28)
+wallhackBtn.Position = UDim2.new(0, 0, 0, 228)
+wallhackBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+wallhackBtn.Text = "👁️ Wallhack OFF"
+wallhackBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+wallhackBtn.TextSize = 13
+wallhackBtn.Font = Enum.Font.Gotham
+wallhackBtn.Parent = content
+
+local wallhackCorner = Instance.new("UICorner")
+wallhackCorner.CornerRadius = UDim.new(0, 6)
+wallhackCorner.Parent = wallhackBtn
+
+applyHoverEffect(wallhackBtn, Color3.fromRGB(60, 60, 65), Color3.fromRGB(80, 80, 85))
+
+local wallhackKeyBtn = Instance.new("TextButton")
+wallhackKeyBtn.Name = "WallhackKeyBtn"
+wallhackKeyBtn.Size = UDim2.new(1, 0, 0, 26)
+wallhackKeyBtn.Position = UDim2.new(0, 0, 0, 260)
+wallhackKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+wallhackKeyBtn.Text = "Wallhack Key: Q"
+wallhackKeyBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+wallhackKeyBtn.TextSize = 12
+wallhackKeyBtn.Font = Enum.Font.Gotham
+wallhackKeyBtn.Parent = content
+
+local wallhackKeyCorner = Instance.new("UICorner")
+wallhackKeyCorner.CornerRadius = UDim.new(0, 6)
+wallhackKeyCorner.Parent = wallhackKeyBtn
+
+applyHoverEffect(wallhackKeyBtn, Color3.fromRGB(50, 50, 55), Color3.fromRGB(70, 70, 75))
+
+-- ==================== FOV CIRCLE ====================
+local fovCircle = Instance.new("Frame")
+fovCircle.Name = "FOVCircle"
+	fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
+	-- Position is dynamically handled in RenderStepped to follow the mouse/crosshair
+fovCircle.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+fovCircle.BackgroundTransparency = 0.85          -- Very faint fill so the circle is easy to see
+fovCircle.BorderSizePixel = 3                    -- Thicker, more visible border
+fovCircle.BorderColor3 = Color3.fromRGB(0, 255, 100)
+fovCircle.Visible = showFovCircle
+fovCircle.Parent = screenGui
+
+local fovCircleCorner = Instance.new("UICorner")
+fovCircleCorner.CornerRadius = UDim.new(1, 0)
+fovCircleCorner.Parent = fovCircle
+
+-- Center dot (bright and solid)
+local centerDot = Instance.new("Frame")
+centerDot.Size = UDim2.new(0, 5, 0, 5)
+centerDot.Position = UDim2.new(0.5, -2.5, 0.5, -2.5)
+centerDot.BackgroundTransparency = 0
+centerDot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+centerDot.BorderSizePixel = 0
+centerDot.Parent = fovCircle
+
+local dotCorner = Instance.new("UICorner")
+dotCorner.CornerRadius = UDim.new(1, 0)
+dotCorner.Parent = centerDot
+
+-- ==================== DRAGGABLE TITLE BAR ====================
+local dragging = false
+local dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-- ==================== SLIDER LOGIC ====================
+local function updateFovSlider()
+	local percent = (fovRadius - 10) / (200 - 10)
+	fovThumb.Position = UDim2.new(percent, -8, 0.5, -8)
+	fovLabel.Text = "FOV " .. math.floor(fovRadius)
+	fovCircle.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
+	-- Position is now dynamically updated in RenderStepped to follow mouse/crosshair
+end
+
+local function updateSmoothSlider()
+	local percent = (smoothness - 0.05) / (0.95 - 0.05)
+	smoothThumb.Position = UDim2.new(percent, -8, 0.5, -8)
+	smoothLabel.Text = "Smoothness " .. string.format("%.2f", smoothness)
+end
+
+-- FOV slider dragging
+local fovDragging = false
+fovTrack.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		fovDragging = true
+	end
+end)
+
+smoothTrack.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		-- Smoothness dragging handled below
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if isShutDown then return end
+	if fovDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local mouseX = input.Position.X
+		local trackAbs = fovTrack.AbsolutePosition.X
+		local trackWidth = fovTrack.AbsoluteSize.X
+		local percent = math.clamp((mouseX - trackAbs) / trackWidth, 0, 1)
+		fovRadius = 10 + percent * (200 - 10)
+		updateFovSlider()
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		fovDragging = false
+	end
+end)
+
+-- Smoothness slider dragging
+local smoothDragging = false
+smoothTrack.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		smoothDragging = true
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if isShutDown then return end
+	if smoothDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local mouseX = input.Position.X
+		local trackAbs = smoothTrack.AbsolutePosition.X
+		local trackWidth = smoothTrack.AbsoluteSize.X
+		local percent = math.clamp((mouseX - trackAbs) / trackWidth, 0, 1)
+		smoothness = 0.05 + percent * (0.95 - 0.05)
+		updateSmoothSlider()
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		smoothDragging = false
+	end
+end)
+
+updateFovSlider()
+updateSmoothSlider()
+
+-- ==================== BUTTON HANDLERS ====================
+masterBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	masterEnabled = not masterEnabled
+	if masterEnabled then
+		masterBtn.Text = "▶ AIMBOT ON"
+		masterBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+	else
+		masterBtn.Text = "▶ AIMBOT OFF"
+		masterBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+	end
+end)
+
+-- Always On Button
+alwaysOnBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	if alwaysOnEnabled then
+		alwaysOnEnabled = false
+		alwaysOnBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+		selectedLabel.Visible = false
+	else
+		alwaysOnEnabled = true
+		keybindEnabled = false
+		alwaysOnBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+		keybindBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+		
+		-- Show "Selected" above Always On button
+		selectedLabel.Position = UDim2.new(0, 0, 0, 28)
+		selectedLabel.Visible = true
+	end
+end)
+
+-- Keybind Button (Click to rebind + toggle) - Supports Keyboard + Mouse
+keybindBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+
+	if keybindEnabled then
+		keybindEnabled = false
+		keybindBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+		selectedLabel.Visible = false
+	else
+		keybindBtn.Text = "Press key/mouse..."
+		keybindBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 120)
+
+		local connection
+		connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
+
+			local isValid = false
+			local displayName = ""
+
+			if input.KeyCode ~= Enum.KeyCode.Unknown then
+				selectedKeybind = input.KeyCode
+				displayName = input.KeyCode.Name
+				isValid = true
+			elseif input.UserInputType == Enum.UserInputType.MouseButton1 or
+				   input.UserInputType == Enum.UserInputType.MouseButton2 or
+				   input.UserInputType == Enum.UserInputType.MouseButton3 then
+				selectedKeybind = input.UserInputType
+				displayName = input.UserInputType.Name:gsub("MouseButton", "Mouse ")
+				isValid = true
+			end
+
+			if isValid then
+				keybindBtn.Text = "⌨️ Keybind: " .. displayName
+
+				keybindEnabled = true
+				alwaysOnEnabled = false
+				keybindBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+				alwaysOnBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+
+				-- Show "Selected" above Keybind button
+				selectedLabel.Position = UDim2.new(0.52, 0, 0, 28)
+				selectedLabel.Visible = true
+
+				connection:Disconnect()
+			end
+		end)
+	end
+end)
+
+checkbox.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	showFovCircle = not showFovCircle
+	if showFovCircle then
+		checkbox.Text = "✓"
+		checkbox.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+		fovCircle.Visible = true
+	else
+		checkbox.Text = ""
+		checkbox.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+		fovCircle.Visible = false
+	end
+end)
+
+wallCheckBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	wallCheckEnabled = not wallCheckEnabled
+	if wallCheckEnabled then
+		wallCheckBtn.Text = "🧱 Wallcheck ON"
+		wallCheckBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 200)
+	else
+		wallCheckBtn.Text = "🧱 Wallcheck OFF"
+		wallCheckBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+	end
+end)
+
+-- Wallhack Toggle
+wallhackBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	wallhackEnabled = not wallhackEnabled
+	if wallhackEnabled then
+		wallhackBtn.Text = "👁️ Wallhack ON"
+		wallhackBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+	else
+		wallhackBtn.Text = "👁️ Wallhack OFF"
+		wallhackBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+		-- Clear all highlights and name tags when disabled
+		for _, highlight in pairs(wallhackHighlights) do
+			if highlight then highlight:Destroy() end
+		end
+		for _, tag in pairs(wallhackNameTags) do
+			if tag then tag:Destroy() end
+		end
+		wallhackHighlights = {}
+		wallhackNameTags = {}
+	end
+end)
+
+-- Wallhack Keybind Changer
+wallhackKeyBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	wallhackKeyBtn.Text = "Press new key..."
+	wallhackKeyBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 120)
+
+	local connection
+	connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			wallhackKey = input.KeyCode
+			wallhackKeyBtn.Text = "Wallhack Key: " .. wallhackKey.Name
+			wallhackKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+			connection:Disconnect()
+		end
+	end)
+end)
+
+-- ==================== KEYBIND TRACKING (Keyboard + Mouse) ====================
+table.insert(connections, UserInputService.InputBegan:Connect(function(input)
+	if isShutDown then return end
+	if (input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode == selectedKeybind) or
+	   (input.UserInputType == selectedKeybind) then
+		holdingKeybind = true
+	end
+end))
+
+table.insert(connections, UserInputService.InputEnded:Connect(function(input)
+	if isShutDown then return end
+	if (input.KeyCode ~= Enum.KeyCode.Unknown and input.KeyCode == selectedKeybind) or
+	   (input.UserInputType == selectedKeybind) then
+		holdingKeybind = false
+	end
+	if input.KeyCode == wallhackKey then
+		holdingWallhackKey = false
+	end
+end))
+
+table.insert(connections, UserInputService.InputBegan:Connect(function(input)
+	if isShutDown then return end
+	if input.KeyCode == wallhackKey then
+		holdingWallhackKey = true
+	end
+end))
+
+-- Toggle panel with customizable minimize key
+table.insert(connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if isShutDown then return end
+	if gameProcessed then return end
+	if input.KeyCode == minimizeKey then
+		mainFrame.Visible = not mainFrame.Visible
+	end
+end))
+
+-- ==================== AIMBOT TARGETING ====================
+local function isEnemy(character)
+	if character == LocalPlayer.Character then return false end
+	
+	local player = Players:GetPlayerFromCharacter(character)
+	if player then
+		-- Player enemy check
+		if LocalPlayer.Team and player.Team == LocalPlayer.Team then
+			return false
+		end
+		return true
+	else
+		-- NPC check
+		if character:GetAttribute("Friendly") == true then
+			return false
+		end
+		return true
+	end
+end
+
+local function getTargetPart(character)
+	local parts = {"Head", "UpperTorso", "HumanoidRootPart"}
+	for _, partName in ipairs(parts) do
+		local part = character:FindFirstChild(partName)
+		if part and part:IsA("BasePart") then
+			return part
+		end
+	end
+	return nil
+end
+
+local function hasLineOfSight(targetPart)
+	if not targetPart then return false end
+	
+	local origin = Camera.CFrame.Position
+	local direction = targetPart.Position - origin
+	
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+	
+	local result = Workspace:Raycast(origin, direction, raycastParams)
+	
+	if result then
+		-- If the ray hit something that belongs to the target's model, we have LOS
+		return result.Instance:IsDescendantOf(targetPart.Parent)
+	else
+		-- No hit means clear line of sight
+		return true
+	end
+end
+
+-- ==================== WALLHACK FUNCTIONS ====================
+local function applyWallhack(character, isEnemyPlayer)
+	if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+	
+	-- Remove old highlight if exists
+	if wallhackHighlights[character] then
+		wallhackHighlights[character]:Destroy()
+	end
+	
+	local highlight = Instance.new("Highlight")
+	highlight.FillTransparency = 0.7
+	highlight.OutlineTransparency = 0.3
+	
+	if isEnemyPlayer then
+		highlight.FillColor = Color3.fromRGB(255, 50, 50)   -- Red for enemies
+		highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+	else
+		highlight.FillColor = Color3.fromRGB(50, 255, 50)   -- Green for teammates
+		highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+	end
+	
+	highlight.Adornee = character
+	highlight.Parent = character
+	wallhackHighlights[character] = highlight
+	
+	-- Add name tag
+	if wallhackNameTags[character] then
+		wallhackNameTags[character]:Destroy()
+	end
+	
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0, 200, 0, 30)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+	
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 1, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = character.Name
+	nameLabel.TextColor3 = isEnemyPlayer and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(100, 255, 100)
+	nameLabel.TextSize = 14
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.Parent = billboard
+	
+	wallhackNameTags[character] = billboard
+end
+
+local function removeWallhack(character)
+	if wallhackHighlights[character] then
+		wallhackHighlights[character]:Destroy()
+		wallhackHighlights[character] = nil
+	end
+	if wallhackNameTags[character] then
+		wallhackNameTags[character]:Destroy()
+		wallhackNameTags[character] = nil
+	end
+end
+
+local function updateWallhack()
+	if not wallhackEnabled then return end
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local isEnemy = true
+			if LocalPlayer.Team and player.Team == LocalPlayer.Team then
+				isEnemy = false
+			end
+			
+			applyWallhack(player.Character, isEnemy)
+		end
+	end
+	
+	-- Also apply to NPCs
+	for _, descendant in ipairs(Workspace:GetDescendants()) do
+		if descendant:IsA("Model") and descendant:FindFirstChildOfClass("Humanoid") then
+			if not Players:GetPlayerFromCharacter(descendant) then
+				local isFriendly = descendant:GetAttribute("Friendly") == true
+				applyWallhack(descendant, not isFriendly)
+			end
+		end
+	end
+end
+
+-- Auto re-apply wallhack when players respawn
+for _, player in ipairs(Players:GetPlayers()) do
+	if player ~= LocalPlayer then
+		player.CharacterAdded:Connect(function(char)
+			if wallhackEnabled then
+				task.wait(0.1)
+				local isEnemy = true
+				if LocalPlayer.Team and player.Team == LocalPlayer.Team then
+					isEnemy = false
+				end
+				applyWallhack(char, isEnemy)
+			end
+		end)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(char)
+		if wallhackEnabled then
+			task.wait(0.1)
+			local isEnemy = true
+			if LocalPlayer.Team and player.Team == LocalPlayer.Team then
+				isEnemy = false
+			end
+			applyWallhack(char, isEnemy)
+		end
+	end)
+end)
+
+local function findBestTarget()
+	if not masterEnabled then return nil end
+	
+	local bestTarget = nil
+	local bestDist = math.huge
+	local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+	
+	for _, descendant in ipairs(Workspace:GetDescendants()) do
+		if descendant:IsA("Model") then
+			local humanoid = descendant:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then          -- Only target ALIVE targets (ignore bodies)
+				if isEnemy(descendant) then
+					local targetPart = getTargetPart(descendant)
+					if targetPart then
+						-- Wallcheck logic
+						if wallCheckEnabled and not hasLineOfSight(targetPart) then
+							continue
+						end
+						
+						local screenPos, onScreen = Camera:WorldToScreenPoint(targetPart.Position)
+						if onScreen then
+							local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+							if dist <= fovRadius and dist < bestDist then
+								bestDist = dist
+								bestTarget = targetPart
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	return bestTarget
+end
+
+-- ==================== CAMERA MOVEMENT ====================
+table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+	if isShutDown then return end
+	
+	-- Update FOV circle position to follow the crosshair/mouse
+	if showFovCircle and fovCircle and fovCircle.Parent then
+		local mousePos = UserInputService:GetMouseLocation()
+		fovCircle.Position = UDim2.new(0, mousePos.X - fovRadius, 0, mousePos.Y - fovRadius)
+	end
+	
+	-- Determine if aimbot should be active this frame
+	local isActive = masterEnabled and 
+		(alwaysOnEnabled or (keybindEnabled and holdingKeybind))
+	
+	-- Wallhack key toggle
+	if holdingWallhackKey and not isShutDown then
+		holdingWallhackKey = false -- prevent repeat
+		wallhackEnabled = not wallhackEnabled
+		if wallhackEnabled then
+			wallhackBtn.Text = "👁️ Wallhack ON"
+			wallhackBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+		else
+			wallhackBtn.Text = "👁️ Wallhack OFF"
+			wallhackBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+			for _, h in pairs(wallhackHighlights) do if h then h:Destroy() end end
+			for _, t in pairs(wallhackNameTags) do if t then t:Destroy() end end
+			wallhackHighlights = {}
+			wallhackNameTags = {}
+		end
+	end
+	
+	-- Update Wallhack
+	if wallhackEnabled then
+		updateWallhack()
+	end
+	
+	if not isActive then
+		targetPart = nil
+		return
+	end
+	
+	targetPart = findBestTarget()
+	
+	if targetPart and targetPart.Parent then
+		local desiredCFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+		local alpha = 1 - (smoothness ^ (dt * 60))
+		Camera.CFrame = Camera.CFrame:Lerp(desiredCFrame, alpha)
+	end
+end))
+
+-- ==================== SHUTDOWN ====================
+shutdownBtn.MouseButton1Click:Connect(function()
+	if isShutDown then return end
+	
+	-- Create confirmation popup
+	local confirmGui = Instance.new("ScreenGui")
+	confirmGui.Name = "ShutdownConfirm"
+	confirmGui.ResetOnSpawn = false
+	confirmGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	
+	local confirmFrame = Instance.new("Frame")
+	confirmFrame.Size = UDim2.new(0, 320, 0, 140)
+	confirmFrame.Position = UDim2.new(0.5, -160, 0.5, -70)
+	confirmFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	confirmFrame.BackgroundTransparency = 0.1
+	confirmFrame.BorderSizePixel = 0
+	confirmFrame.Parent = confirmGui
+	
+	local confirmCorner = Instance.new("UICorner")
+	confirmCorner.CornerRadius = UDim.new(0, 12)
+	confirmCorner.Parent = confirmFrame
+	
+	local confirmLabel = Instance.new("TextLabel")
+	confirmLabel.Size = UDim2.new(1, -40, 0, 50)
+	confirmLabel.Position = UDim2.new(0, 20, 0, 20)
+	confirmLabel.BackgroundTransparency = 1
+	confirmLabel.Text = "Are you sure you want to terminate the script?"
+	confirmLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
+	confirmLabel.TextSize = 15
+	confirmLabel.Font = Enum.Font.Gotham
+	confirmLabel.TextWrapped = true
+	confirmLabel.Parent = confirmFrame
+	
+	local yesBtn = Instance.new("TextButton")
+	yesBtn.Size = UDim2.new(0, 120, 0, 36)
+	yesBtn.Position = UDim2.new(0, 40, 1, -50)
+	yesBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	yesBtn.Text = "Yes"
+	yesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	yesBtn.TextSize = 16
+	yesBtn.Font = Enum.Font.GothamBold
+	yesBtn.Parent = confirmFrame
+	
+	local yesCorner = Instance.new("UICorner")
+	yesCorner.CornerRadius = UDim.new(0, 8)
+	yesCorner.Parent = yesBtn
+	
+	local noBtn = Instance.new("TextButton")
+	noBtn.Size = UDim2.new(0, 120, 0, 36)
+	noBtn.Position = UDim2.new(1, -160, 1, -50)
+	noBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+	noBtn.Text = "No"
+	noBtn.TextColor3 = Color3.fromRGB(220, 220, 230)
+	noBtn.TextSize = 16
+	noBtn.Font = Enum.Font.GothamBold
+	noBtn.Parent = confirmFrame
+	
+	local noCorner = Instance.new("UICorner")
+	noCorner.CornerRadius = UDim.new(0, 8)
+	noCorner.Parent = noBtn
+	
+	-- Yes button action
+	yesBtn.MouseButton1Click:Connect(function()
+		isShutDown = true
+		
+		confirmGui:Destroy()
+		
+		-- Destroy main UI
+		if screenGui and screenGui.Parent then
+			screenGui:Destroy()
+		end
+		if fovCircle and fovCircle.Parent then
+			fovCircle:Destroy()
+		end
+		
+		-- Destroy all Wallhack visuals
+		for _, highlight in pairs(wallhackHighlights) do
+			if highlight then highlight:Destroy() end
+		end
+		for _, tag in pairs(wallhackNameTags) do
+			if tag then tag:Destroy() end
+		end
+		wallhackHighlights = {}
+		wallhackNameTags = {}
+		
+		-- Disconnect all connections
+		for _, conn in ipairs(connections) do
+			if conn then conn:Disconnect() end
+		end
+		connections = {}
+		
+		print("[Aimbot] Shutdown complete. Script is now inert.")
+	end)
+	
+	-- No button action
+	noBtn.MouseButton1Click:Connect(function()
+		confirmGui:Destroy()
+	end)
+end)
+
+-- Initial UI setup
+print("[Aimbot] Aimbot script loaded successfully. Press X to toggle panel.")
