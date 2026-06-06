@@ -1,0 +1,1236 @@
+--[[
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║              NEXUS ULTRA v3.1 - BY MMNWD                    ║
+    ║              Ultimate Universal Script Hub                   ║
+    ║         500+ Commands | Modern UI | Universal                ║
+    ╚═══════════════════════════════════════════════════════════════╝
+]]
+
+-- ═══════════════════════════════════════════════════════════════
+-- TERMS OF SERVICE SCREEN (Loads FIRST before anything)
+-- ═══════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local Player = Players.LocalPlayer
+
+local GuiParent = CoreGui
+pcall(function() if gethui then GuiParent = gethui() end end)
+
+-- Clean up any previous instance
+pcall(function()
+    if GuiParent:FindFirstChild("NexusUltra") then GuiParent.NexusUltra:Destroy() end
+    if GuiParent:FindFirstChild("NexusTOS") then GuiParent.NexusTOS:Destroy() end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- TOS GUI
+-- ═══════════════════════════════════════════════════════════════
+local TOSGui = Instance.new("ScreenGui")
+TOSGui.Name = "NexusTOS"
+TOSGui.Parent = GuiParent
+TOSGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+TOSGui.ResetOnSpawn = false
+TOSGui.DisplayOrder = 9999999
+TOSGui.IgnoreGuiInset = true
+
+-- Full screen dark overlay
+local Overlay = Instance.new("Frame")
+Overlay.Name = "Overlay"
+Overlay.Parent = TOSGui
+Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Overlay.BackgroundTransparency = 1
+Overlay.Size = UDim2.new(1, 0, 1, 0)
+Overlay.ZIndex = 50
+
+-- Blur effect for TOS
+local TOSBlur = Instance.new("BlurEffect")
+TOSBlur.Name = "NexusTOSBlur"
+TOSBlur.Size = 0
+TOSBlur.Parent = game:GetService("Lighting")
+
+-- Main TOS Card
+local TOSCard = Instance.new("Frame")
+TOSCard.Name = "TOSCard"
+TOSCard.Parent = TOSGui
+TOSCard.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
+TOSCard.Size = UDim2.new(0, 0, 0, 0)
+TOSCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+TOSCard.AnchorPoint = Vector2.new(0.5, 0.5)
+TOSCard.ClipsDescendants = true
+TOSCard.ZIndex = 100
+
+local TOSCorner = Instance.new("UICorner")
+TOSCorner.CornerRadius = UDim.new(0, 16)
+TOSCorner.Parent = TOSCard
+
+local TOSStroke = Instance.new("UIStroke")
+TOSStroke.Color = Color3.fromRGB(100, 70, 255)
+TOSStroke.Thickness = 2
+TOSStroke.Transparency = 0.3
+TOSStroke.Parent = TOSCard
+
+-- Shadow behind card
+local TOSShadow = Instance.new("ImageLabel")
+TOSShadow.Parent = TOSCard
+TOSShadow.BackgroundTransparency = 1
+TOSShadow.Position = UDim2.new(0, -50, 0, -45)
+TOSShadow.Size = UDim2.new(1, 100, 1, 100)
+TOSShadow.Image = "rbxassetid://6015897843"
+TOSShadow.ImageColor3 = Color3.new(0, 0, 0)
+TOSShadow.ImageTransparency = 0.3
+TOSShadow.ScaleType = Enum.ScaleType.Slice
+TOSShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+TOSShadow.ZIndex = 99
+
+-- ═══════════════════════════════════════════════════════════════
+-- TOS CONTENT
+-- ═══════════════════════════════════════════════════════════════
+
+-- Top accent bar
+local AccentBar = Instance.new("Frame")
+AccentBar.Parent = TOSCard
+AccentBar.BackgroundColor3 = Color3.fromRGB(100, 70, 255)
+AccentBar.Size = UDim2.new(1, 0, 0, 3)
+AccentBar.Position = UDim2.new(0, 0, 0, 0)
+AccentBar.BorderSizePixel = 0
+AccentBar.ZIndex = 102
+
+-- Animated gradient on accent bar
+local AccentGradient = Instance.new("UIGradient")
+AccentGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 70, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 70, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 70, 255)),
+})
+AccentGradient.Parent = AccentBar
+
+-- Icon / Shield emoji
+local ShieldIcon = Instance.new("TextLabel")
+ShieldIcon.Parent = TOSCard
+ShieldIcon.BackgroundTransparency = 1
+ShieldIcon.Position = UDim2.new(0.5, 0, 0, 20)
+ShieldIcon.Size = UDim2.new(0, 60, 0, 60)
+ShieldIcon.AnchorPoint = Vector2.new(0.5, 0)
+ShieldIcon.Font = Enum.Font.SourceSans
+ShieldIcon.Text = "🛡️"
+ShieldIcon.TextSize = 48
+ShieldIcon.ZIndex = 102
+
+-- Title
+local TOSTitle = Instance.new("TextLabel")
+TOSTitle.Parent = TOSCard
+TOSTitle.BackgroundTransparency = 1
+TOSTitle.Position = UDim2.new(0.5, 0, 0, 85)
+TOSTitle.Size = UDim2.new(1, -40, 0, 30)
+TOSTitle.AnchorPoint = Vector2.new(0.5, 0)
+TOSTitle.Font = Enum.Font.GothamBold
+TOSTitle.Text = "⚡ NEXUS ULTRA - BY MMNWD"
+TOSTitle.TextColor3 = Color3.fromRGB(100, 70, 255)
+TOSTitle.TextSize = 20
+TOSTitle.ZIndex = 102
+
+-- Subtitle
+local TOSSubtitle = Instance.new("TextLabel")
+TOSSubtitle.Parent = TOSCard
+TOSSubtitle.BackgroundTransparency = 1
+TOSSubtitle.Position = UDim2.new(0.5, 0, 0, 118)
+TOSSubtitle.Size = UDim2.new(1, -40, 0, 20)
+TOSSubtitle.AnchorPoint = Vector2.new(0.5, 0)
+TOSSubtitle.Font = Enum.Font.GothamMedium
+TOSSubtitle.Text = "TERMS OF USE AGREEMENT"
+TOSSubtitle.TextColor3 = Color3.fromRGB(180, 180, 210)
+TOSSubtitle.TextSize = 12
+TOSSubtitle.ZIndex = 102
+
+-- Separator line
+local Separator1 = Instance.new("Frame")
+Separator1.Parent = TOSCard
+Separator1.BackgroundColor3 = Color3.fromRGB(50, 50, 75)
+Separator1.Size = UDim2.new(0.85, 0, 0, 1)
+Separator1.Position = UDim2.new(0.075, 0, 0, 148)
+Separator1.BorderSizePixel = 0
+Separator1.ZIndex = 102
+
+-- TOS Text Content (Scrollable)
+local TOSTextFrame = Instance.new("Frame")
+TOSTextFrame.Parent = TOSCard
+TOSTextFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 22)
+TOSTextFrame.Position = UDim2.new(0.5, 0, 0, 160)
+TOSTextFrame.Size = UDim2.new(0.88, 0, 0, 200)
+TOSTextFrame.AnchorPoint = Vector2.new(0.5, 0)
+TOSTextFrame.ZIndex = 101
+
+local TOSTextCorner = Instance.new("UICorner")
+TOSTextCorner.CornerRadius = UDim.new(0, 10)
+TOSTextCorner.Parent = TOSTextFrame
+
+local TOSTextStroke = Instance.new("UIStroke")
+TOSTextStroke.Color = Color3.fromRGB(40, 40, 65)
+TOSTextStroke.Thickness = 1
+TOSTextStroke.Parent = TOSTextFrame
+
+local TOSScroll = Instance.new("ScrollingFrame")
+TOSScroll.Parent = TOSTextFrame
+TOSScroll.BackgroundTransparency = 1
+TOSScroll.Size = UDim2.new(1, 0, 1, 0)
+TOSScroll.ScrollBarThickness = 3
+TOSScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 70, 255)
+TOSScroll.CanvasSize = UDim2.new(0, 0, 0, 420)
+TOSScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+TOSScroll.ZIndex = 102
+
+local TOSPadding = Instance.new("UIPadding")
+TOSPadding.PaddingLeft = UDim.new(0, 14)
+TOSPadding.PaddingRight = UDim.new(0, 14)
+TOSPadding.PaddingTop = UDim.new(0, 12)
+TOSPadding.PaddingBottom = UDim.new(0, 12)
+TOSPadding.Parent = TOSScroll
+
+local TOSContent = Instance.new("TextLabel")
+TOSContent.Parent = TOSScroll
+TOSContent.BackgroundTransparency = 1
+TOSContent.Size = UDim2.new(1, 0, 0, 400)
+TOSContent.Font = Enum.Font.Gotham
+TOSContent.TextColor3 = Color3.fromRGB(180, 180, 210)
+TOSContent.TextSize = 12
+TOSContent.TextXAlignment = Enum.TextXAlignment.Left
+TOSContent.TextYAlignment = Enum.TextYAlignment.Top
+TOSContent.TextWrapped = true
+TOSContent.LineHeight = 1.4
+TOSContent.RichText = true
+TOSContent.ZIndex = 103
+TOSContent.Text = [[<font color="#6446FF"><b>NEXUS ULTRA v3.1 — Terms of Use</b></font>
+
+By clicking <b>"I Accept"</b> below, you acknowledge and agree to the following terms:
+
+<font color="#FF4650"><b>⚠️ USE AT YOUR OWN RISK</b></font>
+This software is provided <b>"AS IS"</b> without any warranty of any kind, express or implied. The developer(s) of NEXUS ULTRA are <b>NOT responsible</b> for any consequences resulting from the use of this software, including but not limited to:
+
+<font color="#FFD046">•</font> Account moderation, suspension, or termination
+<font color="#FFD046">•</font> Loss of in-game progress, items, or currency
+<font color="#FFD046">•</font> Any form of ban (temporary or permanent)
+<font color="#FFD046">•</font> Game crashes or unexpected behavior
+<font color="#FFD046">•</font> Any damages to your device or data
+
+<font color="#46B4FF"><b>📋 USER AGREEMENT</b></font>
+<font color="#FFD046">1.</font> You understand this is a <b>third-party tool</b> not affiliated with Roblox Corporation.
+<font color="#FFD046">2.</font> You accept <b>full responsibility</b> for any actions taken using this software.
+<font color="#FFD046">3.</font> You will <b>not</b> use this tool to harass, bully, or harm other players.
+<font color="#FFD046">4.</font> You acknowledge that using exploits <b>violates Roblox Terms of Service</b>.
+<font color="#FFD046">5.</font> You agree that the developer(s) hold <b>zero liability</b> for any outcomes.
+<font color="#FFD046">6.</font> You are using this software <b>voluntarily</b> and at your own discretion.
+
+<font color="#46FF82"><b>🔒 PRIVACY</b></font>
+NEXUS ULTRA operates <b>entirely client-side</b>. No data is collected, stored, or transmitted to external servers.
+
+<font color="#C846FF"><b>📌 DISCLAIMER</b></font>
+This project is for <b>educational and research purposes only</b>. The creator does not encourage or endorse the violation of any platform's terms of service.
+
+<font color="#6446FF"><b>By accepting, you confirm you have read, understood, and agree to ALL terms stated above.</b></font>]]
+
+-- Separator 2
+local Separator2 = Instance.new("Frame")
+Separator2.Parent = TOSCard
+Separator2.BackgroundColor3 = Color3.fromRGB(50, 50, 75)
+Separator2.Size = UDim2.new(0.85, 0, 0, 1)
+Separator2.Position = UDim2.new(0.075, 0, 0, 372)
+Separator2.BorderSizePixel = 0
+Separator2.ZIndex = 102
+
+-- Warning label
+local WarningLabel = Instance.new("TextLabel")
+WarningLabel.Parent = TOSCard
+WarningLabel.BackgroundTransparency = 1
+WarningLabel.Position = UDim2.new(0.5, 0, 0, 380)
+WarningLabel.Size = UDim2.new(0.9, 0, 0, 20)
+WarningLabel.AnchorPoint = Vector2.new(0.5, 0)
+WarningLabel.Font = Enum.Font.GothamMedium
+WarningLabel.Text = "⚠️ Declining will disconnect you from the game."
+WarningLabel.TextColor3 = Color3.fromRGB(255, 200, 70)
+WarningLabel.TextSize = 11
+WarningLabel.ZIndex = 102
+
+-- ═══════════════════════════════════════════════════════════════
+-- BUTTONS
+-- ═══════════════════════════════════════════════════════════════
+local ButtonContainer = Instance.new("Frame")
+ButtonContainer.Parent = TOSCard
+ButtonContainer.BackgroundTransparency = 1
+ButtonContainer.Position = UDim2.new(0.5, 0, 0, 408)
+ButtonContainer.Size = UDim2.new(0.88, 0, 0, 50)
+ButtonContainer.AnchorPoint = Vector2.new(0.5, 0)
+ButtonContainer.ZIndex = 102
+
+-- Accept Button
+local AcceptBtn = Instance.new("TextButton")
+AcceptBtn.Parent = ButtonContainer
+AcceptBtn.BackgroundColor3 = Color3.fromRGB(100, 70, 255)
+AcceptBtn.Position = UDim2.new(0, 0, 0, 0)
+AcceptBtn.Size = UDim2.new(0.48, 0, 0, 44)
+AcceptBtn.Font = Enum.Font.GothamBold
+AcceptBtn.Text = "✅  I ACCEPT"
+AcceptBtn.TextColor3 = Color3.new(1, 1, 1)
+AcceptBtn.TextSize = 14
+AcceptBtn.AutoButtonColor = false
+AcceptBtn.ZIndex = 103
+
+local AcceptCorner = Instance.new("UICorner")
+AcceptCorner.CornerRadius = UDim.new(0, 10)
+AcceptCorner.Parent = AcceptBtn
+
+local AcceptGlow = Instance.new("UIStroke")
+AcceptGlow.Color = Color3.fromRGB(130, 100, 255)
+AcceptGlow.Thickness = 1.5
+AcceptGlow.Transparency = 0.4
+AcceptGlow.Parent = AcceptBtn
+
+-- Decline Button
+local DeclineBtn = Instance.new("TextButton")
+DeclineBtn.Parent = ButtonContainer
+DeclineBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+DeclineBtn.Position = UDim2.new(0.52, 0, 0, 0)
+DeclineBtn.Size = UDim2.new(0.48, 0, 0, 44)
+DeclineBtn.Font = Enum.Font.GothamBold
+DeclineBtn.Text = "❌  DECLINE"
+DeclineBtn.TextColor3 = Color3.fromRGB(255, 70, 80)
+DeclineBtn.TextSize = 14
+DeclineBtn.AutoButtonColor = false
+DeclineBtn.ZIndex = 103
+
+local DeclineCorner = Instance.new("UICorner")
+DeclineCorner.CornerRadius = UDim.new(0, 10)
+DeclineCorner.Parent = DeclineBtn
+
+local DeclineStroke = Instance.new("UIStroke")
+DeclineStroke.Color = Color3.fromRGB(255, 70, 80)
+DeclineStroke.Thickness = 1
+DeclineStroke.Transparency = 0.6
+DeclineStroke.Parent = DeclineBtn
+
+-- Footer
+local Footer = Instance.new("TextLabel")
+Footer.Parent = TOSCard
+Footer.BackgroundTransparency = 1
+Footer.Position = UDim2.new(0.5, 0, 1, -22)
+Footer.Size = UDim2.new(1, 0, 0, 18)
+Footer.AnchorPoint = Vector2.new(0.5, 0)
+Footer.Font = Enum.Font.Gotham
+Footer.Text = "NEXUS ULTRA v3.1 • Made by MMNWD • All rights reserved"
+Footer.TextColor3 = Color3.fromRGB(60, 60, 85)
+Footer.TextSize = 9
+Footer.ZIndex = 102
+
+-- ═══════════════════════════════════════════════════════════════
+-- ANIMATIONS & LOGIC
+-- ═══════════════════════════════════════════════════════════════
+
+-- Helper tween function
+local function QuickTween(obj, props, dur, style)
+    local ti = TweenInfo.new(dur or 0.3, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    local tw = TweenService:Create(obj, ti, props)
+    tw:Play()
+    return tw
+end
+
+-- Animate gradient on accent bar
+task.spawn(function()
+    local offset = 0
+    while TOSGui.Parent do
+        offset = (offset + 0.005) % 1
+        AccentGradient.Offset = Vector2.new(offset, 0)
+        task.wait(0.016)
+    end
+end)
+
+-- Hover effects
+AcceptBtn.MouseEnter:Connect(function()
+    QuickTween(AcceptBtn, {BackgroundColor3 = Color3.fromRGB(130, 100, 255), Size = UDim2.new(0.48, 0, 0, 48)}, 0.15)
+end)
+AcceptBtn.MouseLeave:Connect(function()
+    QuickTween(AcceptBtn, {BackgroundColor3 = Color3.fromRGB(100, 70, 255), Size = UDim2.new(0.48, 0, 0, 44)}, 0.15)
+end)
+
+DeclineBtn.MouseEnter:Connect(function()
+    QuickTween(DeclineBtn, {BackgroundColor3 = Color3.fromRGB(80, 30, 35), Size = UDim2.new(0.48, 0, 0, 48)}, 0.15)
+end)
+DeclineBtn.MouseLeave:Connect(function()
+    QuickTween(DeclineBtn, {BackgroundColor3 = Color3.fromRGB(40, 40, 55), Size = UDim2.new(0.48, 0, 0, 44)}, 0.15)
+end)
+
+-- Entrance animation
+task.wait(0.1)
+
+-- Fade in overlay
+QuickTween(Overlay, {BackgroundTransparency = 0.4}, 0.5)
+QuickTween(TOSBlur, {Size = 12}, 0.5)
+
+-- Card entrance with bounce
+task.wait(0.15)
+QuickTween(TOSCard, {
+    Size = UDim2.new(0, 520, 0, 490),
+}, 0.6, Enum.EasingStyle.Back)
+
+-- Pulse animation on shield icon
+task.spawn(function()
+    while TOSGui.Parent and ShieldIcon.Parent do
+        QuickTween(ShieldIcon, {TextSize = 52}, 0.8, Enum.EasingStyle.Sine)
+        task.wait(0.8)
+        QuickTween(ShieldIcon, {TextSize = 44}, 0.8, Enum.EasingStyle.Sine)
+        task.wait(0.8)
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- ACCEPT / DECLINE HANDLERS
+-- ═══════════════════════════════════════════════════════════════
+local tosAccepted = false
+local tosAnswered = false
+
+AcceptBtn.MouseButton1Click:Connect(function()
+    if tosAnswered then return end
+    tosAnswered = true
+    tosAccepted = true
+    
+    -- Flash green
+    QuickTween(AcceptBtn, {BackgroundColor3 = Color3.fromRGB(70, 255, 130)}, 0.15)
+    AcceptBtn.Text = "✅  ACCEPTED!"
+    
+    -- Success sound effect
+    pcall(function()
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://6026984224"
+        s.Volume = 0.5
+        s.Parent = game:GetService("SoundService")
+        s:Play()
+        s.Ended:Connect(function() s:Destroy() end)
+    end)
+    
+    task.wait(0.3)
+    
+    -- Card exit animation
+    QuickTween(TOSStroke, {Transparency = 1}, 0.3)
+    QuickTween(TOSCard, {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+    }, 0.5, Enum.EasingStyle.Back)
+    
+    QuickTween(Overlay, {BackgroundTransparency = 1}, 0.4)
+    QuickTween(TOSBlur, {Size = 0}, 0.4)
+    
+    task.wait(0.6)
+    
+    -- Cleanup TOS GUI
+    TOSBlur:Destroy()
+    TOSGui:Destroy()
+end)
+
+DeclineBtn.MouseButton1Click:Connect(function()
+    if tosAnswered then return end
+    tosAnswered = true
+    tosAccepted = false
+    
+    -- Flash red
+    QuickTween(DeclineBtn, {BackgroundColor3 = Color3.fromRGB(255, 70, 80)}, 0.15)
+    DeclineBtn.Text = "❌  DECLINED"
+    AcceptBtn.Visible = false
+    
+    -- Error sound
+    pcall(function()
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://6026984224"
+        s.Volume = 0.3
+        s.PlaybackSpeed = 0.6
+        s.Parent = game:GetService("SoundService")
+        s:Play()
+        s.Ended:Connect(function() s:Destroy() end)
+    end)
+    
+    task.wait(0.3)
+    
+    -- Show disconnect message
+    WarningLabel.Text = "🚫 Terms declined. Disconnecting..."
+    WarningLabel.TextColor3 = Color3.fromRGB(255, 70, 80)
+    QuickTween(WarningLabel, {TextSize = 14}, 0.3)
+    
+    -- Screen goes red
+    QuickTween(Overlay, {BackgroundColor3 = Color3.fromRGB(60, 0, 0), BackgroundTransparency = 0.2}, 0.5)
+    QuickTween(TOSStroke, {Color = Color3.fromRGB(255, 70, 80)}, 0.3)
+    
+    -- Countdown
+    for i = 3, 1, -1 do
+        WarningLabel.Text = "🚫 Disconnecting in " .. i .. "..."
+        task.wait(1)
+    end
+    
+    -- Card collapse
+    QuickTween(TOSCard, {
+        Size = UDim2.new(0, 520, 0, 0),
+        BackgroundTransparency = 1,
+    }, 0.4)
+    
+    QuickTween(Overlay, {BackgroundTransparency = 0}, 0.5)
+    
+    task.wait(0.6)
+    
+    -- Kick the player
+    Player:Kick("\n\n🛡️ NEXUS ULTRA - BY MMNWD\n\n❌ You have declined the Terms of Use.\n\nYou must accept the terms to use NEXUS ULTRA.\n\nReconnect and accept to continue.\n")
+end)
+
+-- Wait for TOS answer
+repeat task.wait(0.1) until tosAnswered
+if not tosAccepted then return end -- Stop entire script if declined
+
+-- Small delay before loading main UI
+task.wait(0.3)
+
+-- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════
+-- MAIN NEXUS ULTRA SCRIPT BEGINS HERE (Only runs if accepted)
+-- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════
+
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local SoundService = game:GetService("SoundService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Stats = game:GetService("Stats")
+local Camera = Workspace.CurrentCamera
+local Mouse = Player:GetMouse()
+
+-- ═══════════════════════════════════════════════════════════════
+-- CONFIGURATION
+-- ═══════════════════════════════════════════════════════════════
+local NexusConfig = {
+    Version = "3.1.0",
+    Name = "NEXUS ULTRA - BY MMNWD",
+    ToggleKey = Enum.KeyCode.RightShift,
+    CommandPrefix = ";",
+    Theme = {
+        Primary = Color3.fromRGB(15, 15, 25),
+        Secondary = Color3.fromRGB(22, 22, 35),
+        Tertiary = Color3.fromRGB(30, 30, 48),
+        Accent = Color3.fromRGB(100, 70, 255),
+        AccentLight = Color3.fromRGB(130, 100, 255),
+        AccentDark = Color3.fromRGB(70, 45, 200),
+        Glow = Color3.fromRGB(100, 70, 255),
+        Text = Color3.fromRGB(240, 240, 255),
+        TextDim = Color3.fromRGB(160, 160, 185),
+        TextDark = Color3.fromRGB(100, 100, 130),
+        Success = Color3.fromRGB(70, 255, 130),
+        Warning = Color3.fromRGB(255, 200, 70),
+        Error = Color3.fromRGB(255, 70, 80),
+        Info = Color3.fromRGB(70, 180, 255),
+        Border = Color3.fromRGB(50, 50, 75),
+        Shadow = Color3.fromRGB(5, 5, 10),
+    },
+    AnimSpeed = 0.3,
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- STATE
+-- ═══════════════════════════════════════════════════════════════
+local NexusState = {
+    WalkSpeed = 16, JumpPower = 50, Noclip = false, Fly = false, FlySpeed = 50,
+    InfiniteJump = false, ESP = false, Chams = false, Tracers = false,
+    Fullbright = false, Xray = false, Freecam = false, FreecamSpeed = 1,
+    NoFog = false, TimeValue = 14, GodMode = false, AntiAFK = true,
+    ClickTP = false, ClickDelete = false, Invisible = false,
+    Waypoints = {}, Connections = {}, ESPObjects = {},
+    GuiOpen = true, Minimized = false, CurrentTab = "Home",
+    CommandHistory = {}, CommandHistoryIndex = 0,
+    RemoteSpyEnabled = false, RemoteSpyLogs = {}, RemoteSpyMaxLogs = 500,
+    RemoteSpyBlacklist = {}, RemoteSpyFilter = "All",
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- UTILITIES
+-- ═══════════════════════════════════════════════════════════════
+local Utils = {}
+
+function Utils.Tween(obj, props, duration, style, direction)
+    local tw = TweenService:Create(obj, TweenInfo.new(duration or NexusConfig.AnimSpeed, style or Enum.EasingStyle.Quint, direction or Enum.EasingDirection.Out), props)
+    tw:Play()
+    return tw
+end
+
+function Utils.CreateInstance(className, properties)
+    local inst = Instance.new(className)
+    if properties then
+        for prop, value in pairs(properties) do
+            if prop ~= "Parent" then pcall(function() inst[prop] = value end) end
+        end
+        if properties.Parent then inst.Parent = properties.Parent end
+    end
+    return inst
+end
+
+function Utils.GetCharacter() return Player.Character or Player.CharacterAdded:Wait() end
+function Utils.GetHumanoid() local c = Utils.GetCharacter(); return c and c:FindFirstChildOfClass("Humanoid") end
+function Utils.GetRootPart() local c = Utils.GetCharacter(); return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
+
+function Utils.FindPlayer(query)
+    query = query:lower()
+    if query == "me" or query == "." then return {Player} end
+    if query == "all" or query == "*" then return Players:GetPlayers() end
+    if query == "others" then local r = {}; for _, p in ipairs(Players:GetPlayers()) do if p ~= Player then table.insert(r, p) end end; return r end
+    if query == "random" then local pl = Players:GetPlayers(); return {pl[math.random(#pl)]} end
+    if query == "nearest" then
+        local root = Utils.GetRootPart(); if not root then return {} end
+        local n, d = nil, math.huge
+        for _, p in ipairs(Players:GetPlayers()) do if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then local dd = (p.Character.HumanoidRootPart.Position - root.Position).Magnitude; if dd < d then n, d = p, dd end end end
+        return n and {n} or {}
+    end
+    local r = {}
+    for _, p in ipairs(Players:GetPlayers()) do if p.Name:lower():sub(1, #query) == query or p.DisplayName:lower():sub(1, #query) == query then table.insert(r, p) end end
+    return r
+end
+
+function Utils.Notify(title, message, notifType, duration) UI.CreateNotification(title, message, notifType, duration) end
+
+function Utils.AddConnection(name, conn) if NexusState.Connections[name] then NexusState.Connections[name]:Disconnect() end; NexusState.Connections[name] = conn end
+function Utils.RemoveConnection(name) if NexusState.Connections[name] then NexusState.Connections[name]:Disconnect(); NexusState.Connections[name] = nil end end
+
+function Utils.CopyToClipboard(text) pcall(function() if setclipboard then setclipboard(text) elseif toclipboard then toclipboard(text) end end) end
+
+function Utils.SerializeArgs(args)
+    local result = {}
+    for _, arg in ipairs(args) do
+        local t = typeof(arg)
+        if t == "string" then table.insert(result, '"'..arg:gsub('"', '\\"')..'"')
+        elseif t == "number" or t == "boolean" then table.insert(result, tostring(arg))
+        elseif t == "nil" then table.insert(result, "nil")
+        elseif t == "Instance" then table.insert(result, arg:GetFullName())
+        elseif t == "Vector3" then table.insert(result, string.format("Vector3.new(%.2f,%.2f,%.2f)", arg.X, arg.Y, arg.Z))
+        elseif t == "CFrame" then table.insert(result, string.format("CFrame.new(%.2f,%.2f,%.2f)", arg.Position.X, arg.Position.Y, arg.Position.Z))
+        elseif t == "Color3" then table.insert(result, string.format("Color3.new(%.2f,%.2f,%.2f)", arg.R, arg.G, arg.B))
+        elseif t == "EnumItem" then table.insert(result, tostring(arg))
+        elseif t == "table" then local i = {}; for k, v in pairs(arg) do table.insert(i, (type(k)=="string" and k.."=" or "")..Utils.SerializeArgs({v})) end; table.insert(result, "{"..table.concat(i,", ").."}")
+        else table.insert(result, "<"..t..">") end
+    end
+    return table.concat(result, ", ")
+end
+
+function Utils.GenerateScript(remotePath, remoteType, args)
+    local lines = {"-- Generated by NEXUS ULTRA Remote Spy"}
+    local chain = "game"
+    for part in remotePath:gmatch("[^%.]+") do chain = chain..':WaitForChild("'..part..'")' end
+    table.insert(lines, "local remote = "..chain)
+    if remoteType == "RemoteEvent" then table.insert(lines, "remote:FireServer("..Utils.SerializeArgs(args)..")")
+    else table.insert(lines, "local result = remote:InvokeServer("..Utils.SerializeArgs(args)..")") end
+    return table.concat(lines, "\n")
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- GUI SETUP
+-- ═══════════════════════════════════════════════════════════════
+local UI = {}
+
+local ScreenGui = Utils.CreateInstance("ScreenGui", {
+    Name = "NexusUltra", Parent = GuiParent, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    ResetOnSpawn = false, DisplayOrder = 999999, IgnoreGuiInset = true,
+})
+
+-- Notifications
+local NotificationContainer = Utils.CreateInstance("Frame", {Parent = ScreenGui, BackgroundTransparency = 1, Size = UDim2.new(0,340,1,0), Position = UDim2.new(1,-355,0,0), ZIndex = 100})
+Utils.CreateInstance("UIListLayout", {Parent = NotificationContainer, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,8), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Center})
+Utils.CreateInstance("UIPadding", {Parent = NotificationContainer, PaddingBottom = UDim.new(0,20), PaddingRight = UDim.new(0,10)})
+
+function UI.CreateNotification(title, message, notifType, duration)
+    notifType = notifType or "Info"; duration = duration or 4
+    local color = ({Success = NexusConfig.Theme.Success, Warning = NexusConfig.Theme.Warning, Error = NexusConfig.Theme.Error})[notifType] or NexusConfig.Theme.Info
+    local icon = ({Success = "✅", Warning = "⚠️", Error = "❌"})[notifType] or "ℹ️"
+    local nf = Utils.CreateInstance("Frame", {Parent = NotificationContainer, BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,0), ClipsDescendants = true, ZIndex = 100})
+    Utils.CreateInstance("UICorner", {Parent = nf, CornerRadius = UDim.new(0,10)})
+    Utils.CreateInstance("UIStroke", {Parent = nf, Color = color, Thickness = 1, Transparency = 0.5})
+    Utils.CreateInstance("Frame", {Parent = nf, BackgroundColor3 = color, Size = UDim2.new(0,3,1,0), BorderSizePixel = 0, ZIndex = 101})
+    Utils.CreateInstance("TextLabel", {Parent = nf, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,8), Size = UDim2.new(1,-20,0,18), Font = Enum.Font.GothamBold, Text = icon.." "..title, TextColor3 = color, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 101})
+    Utils.CreateInstance("TextLabel", {Parent = nf, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,28), Size = UDim2.new(1,-20,0,30), Font = Enum.Font.Gotham, Text = message, TextColor3 = NexusConfig.Theme.TextDim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 101})
+    local pb = Utils.CreateInstance("Frame", {Parent = nf, BackgroundColor3 = color, Size = UDim2.new(1,0,0,2), Position = UDim2.new(0,0,1,-2), BorderSizePixel = 0, ZIndex = 102})
+    Utils.Tween(nf, {Size = UDim2.new(1,0,0,65)}, 0.3)
+    Utils.Tween(pb, {Size = UDim2.new(0,0,0,2)}, duration, Enum.EasingStyle.Linear)
+    task.delay(duration, function() Utils.Tween(nf, {Size = UDim2.new(1,0,0,0), BackgroundTransparency = 1}, 0.3); task.wait(0.35); nf:Destroy() end)
+end
+
+-- Blur
+local Blur = Utils.CreateInstance("BlurEffect", {Name = "NexusBlur", Parent = Lighting, Size = 0, Enabled = true})
+
+-- Main Frame
+local MainFrame = Utils.CreateInstance("Frame", {Parent = ScreenGui, BackgroundColor3 = NexusConfig.Theme.Primary, Size = UDim2.new(0,750,0,480), Position = UDim2.new(0.5,-375,0.5,-240), ClipsDescendants = true, Active = true, ZIndex = 10})
+Utils.CreateInstance("UICorner", {Parent = MainFrame, CornerRadius = UDim.new(0,12)})
+Utils.CreateInstance("ImageLabel", {Parent = MainFrame, BackgroundTransparency = 1, Position = UDim2.new(0,-40,0,-35), Size = UDim2.new(1,80,1,80), Image = "rbxassetid://6015897843", ImageColor3 = Color3.new(0,0,0), ImageTransparency = 0.4, ScaleType = Enum.ScaleType.Slice, SliceCenter = Rect.new(49,49,450,450), ZIndex = 9})
+Utils.CreateInstance("UIStroke", {Parent = MainFrame, Color = NexusConfig.Theme.Accent, Thickness = 1.5, Transparency = 0.6})
+
+-- Title Bar
+local TitleBar = Utils.CreateInstance("Frame", {Parent = MainFrame, BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,38), BorderSizePixel = 0, ZIndex = 11})
+Utils.CreateInstance("UICorner", {Parent = TitleBar, CornerRadius = UDim.new(0,12)})
+Utils.CreateInstance("Frame", {Parent = TitleBar, BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,14), Position = UDim2.new(0,0,1,-14), BorderSizePixel = 0, ZIndex = 11})
+Utils.CreateInstance("Frame", {Parent = TitleBar, BackgroundColor3 = NexusConfig.Theme.Accent, Size = UDim2.new(1,0,0,1), Position = UDim2.new(0,0,1,0), BorderSizePixel = 0, ZIndex = 12})
+Utils.CreateInstance("TextLabel", {Parent = TitleBar, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,0), Size = UDim2.new(0,300,1,0), Font = Enum.Font.GothamBold, Text = "⚡ NEXUS ULTRA  - BY MMNWD", TextColor3 = NexusConfig.Theme.Accent, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12})
+Utils.CreateInstance("TextLabel", {Parent = TitleBar, BackgroundTransparency = 1, Position = UDim2.new(0,272,0,2), Size = UDim2.new(0,40,0,16), Font = Enum.Font.GothamBold, Text = "v3.1", TextColor3 = NexusConfig.Theme.AccentDark, TextSize = 9, ZIndex = 12})
+
+local WindowControls = Utils.CreateInstance("Frame", {Parent = TitleBar, BackgroundTransparency = 1, Size = UDim2.new(0,100,1,0), Position = UDim2.new(1,-100,0,0), ZIndex = 12})
+Utils.CreateInstance("UIListLayout", {Parent = WindowControls, FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0,4)})
+
+local function CreateTitleButton(text, color, cb)
+    local b = Utils.CreateInstance("TextButton", {Parent = WindowControls, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(0,28,0,28), Font = Enum.Font.GothamBold, Text = text, TextColor3 = color, TextSize = 14, ZIndex = 13, AutoButtonColor = false})
+    Utils.CreateInstance("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)})
+    b.MouseEnter:Connect(function() Utils.Tween(b, {BackgroundColor3 = color, TextColor3 = Color3.new(1,1,1)}, 0.15) end)
+    b.MouseLeave:Connect(function() Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Tertiary, TextColor3 = color}, 0.15) end)
+    b.MouseButton1Click:Connect(cb)
+end
+
+CreateTitleButton("—", NexusConfig.Theme.Warning, function()
+    NexusState.Minimized = not NexusState.Minimized
+    Utils.Tween(MainFrame, {Size = NexusState.Minimized and UDim2.new(0,750,0,38) or UDim2.new(0,750,0,480)}, 0.3)
+    Utils.Tween(Blur, {Size = NexusState.Minimized and 0 or 6}, 0.3)
+end)
+
+CreateTitleButton("✕", NexusConfig.Theme.Error, function()
+    NexusState.GuiOpen = false
+    Utils.Tween(MainFrame, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5,0,0.5,0)}, 0.3)
+    Utils.Tween(Blur, {Size = 0}, 0.3); task.wait(0.35); MainFrame.Visible = false
+end)
+
+-- Dragging
+do
+    local dragging, dragInput, dragStart, startPos
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    TitleBar.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+    UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then local d = input.Position - dragStart; Utils.Tween(MainFrame, {Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)}, 0.08, Enum.EasingStyle.Quad) end end)
+end
+
+-- Sidebar
+local Sidebar = Utils.CreateInstance("Frame", {Parent = MainFrame, BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(0,170,1,-39), Position = UDim2.new(0,0,0,39), BorderSizePixel = 0, ZIndex = 11})
+Utils.CreateInstance("Frame", {Parent = Sidebar, BackgroundColor3 = NexusConfig.Theme.Border, Size = UDim2.new(0,1,1,0), Position = UDim2.new(1,0,0,0), BorderSizePixel = 0, ZIndex = 12})
+
+local TabContainer = Utils.CreateInstance("ScrollingFrame", {Parent = Sidebar, BackgroundTransparency = 1, Size = UDim2.new(1,-10,1,-60), Position = UDim2.new(0,5,0,8), ScrollBarThickness = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 12})
+Utils.CreateInstance("UIListLayout", {Parent = TabContainer, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,3)})
+Utils.CreateInstance("UIPadding", {Parent = TabContainer, PaddingLeft = UDim.new(0,4), PaddingRight = UDim.new(0,4), PaddingTop = UDim.new(0,4)})
+
+-- FPS/Ping
+local StatsFrame = Utils.CreateInstance("Frame", {Parent = Sidebar, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,-16,0,44), Position = UDim2.new(0,8,1,-52), ZIndex = 12})
+Utils.CreateInstance("UICorner", {Parent = StatsFrame, CornerRadius = UDim.new(0,8)})
+local FPSLabel = Utils.CreateInstance("TextLabel", {Parent = StatsFrame, BackgroundTransparency = 1, Size = UDim2.new(0.5,0,1,0), Font = Enum.Font.GothamBold, Text = "FPS: --", TextColor3 = NexusConfig.Theme.Success, TextSize = 11, ZIndex = 13})
+local PingLabel = Utils.CreateInstance("TextLabel", {Parent = StatsFrame, BackgroundTransparency = 1, Size = UDim2.new(0.5,0,1,0), Position = UDim2.new(0.5,0,0,0), Font = Enum.Font.GothamBold, Text = "Ping: --", TextColor3 = NexusConfig.Theme.Info, TextSize = 11, ZIndex = 13})
+
+task.spawn(function()
+    local lt, fr = tick(), 0
+    RunService.RenderStepped:Connect(function() fr += 1
+        if tick() - lt >= 1 then FPSLabel.Text = "FPS: "..fr; FPSLabel.TextColor3 = Color3.fromRGB(255*(1-math.clamp(fr/60,0,1)), 255*math.clamp(fr/60,0,1), 70); fr = 0; lt = tick()
+            pcall(function() local p = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()); PingLabel.Text = "Ping: "..p.."ms"; PingLabel.TextColor3 = p < 80 and NexusConfig.Theme.Success or p < 150 and NexusConfig.Theme.Warning or NexusConfig.Theme.Error end)
+        end
+    end)
+end)
+
+-- Content Area
+local ContentArea = Utils.CreateInstance("Frame", {Parent = MainFrame, BackgroundColor3 = NexusConfig.Theme.Primary, Size = UDim2.new(1,-171,1,-39), Position = UDim2.new(0,171,0,39), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 11})
+
+local Pages = {}
+local TabButtons = {}
+
+local TabDefs = {
+    {N="Home",I="🏠",O=1},{N="Player",I="🎮",O=2},{N="Movement",I="🏃",O=3},{N="Visuals",I="👁️",O=4},
+    {N="Teleport",I="🌀",O=5},{N="Server",I="🌐",O=6},{N="World",I="🌍",O=7},{N="Fun",I="🎉",O=8},
+    {N="Combat",I="⚔️",O=9},{N="Dex",I="🔍",O=10},{N="RemoteSpy",I="📡",O=11},{N="Console",I="💻",O=12},{N="Settings",I="⚙️",O=13},
+}
+
+function UI.CreatePage(name)
+    local p = Utils.CreateInstance("ScrollingFrame", {Name = name, Parent = ContentArea, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), Visible = name == "Home", ScrollBarThickness = 3, ScrollBarImageColor3 = NexusConfig.Theme.Accent, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 12})
+    Utils.CreateInstance("UIListLayout", {Parent = p, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,6)})
+    Utils.CreateInstance("UIPadding", {Parent = p, PaddingTop = UDim.new(0,10), PaddingBottom = UDim.new(0,10), PaddingLeft = UDim.new(0,12), PaddingRight = UDim.new(0,12)})
+    Pages[name] = p; return p
+end
+
+function UI.SwitchTab(name)
+    NexusState.CurrentTab = name
+    for n, p in pairs(Pages) do p.Visible = (n == name); if n == name then p.CanvasPosition = Vector2.new(0,0) end end
+    for _, b in pairs(TabButtons) do
+        if b.Name == name then Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Accent}, 0.2); b.TextLabel1.TextColor3 = Color3.new(1,1,1)
+        else Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Secondary}, 0.2); b.TextLabel1.TextColor3 = NexusConfig.Theme.TextDim end
+    end
+end
+
+for _, td in ipairs(TabDefs) do
+    UI.CreatePage(td.N)
+    local tb = Utils.CreateInstance("TextButton", {Name = td.N, Parent = TabContainer, BackgroundColor3 = td.N == "Home" and NexusConfig.Theme.Accent or NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,34), Text = "", LayoutOrder = td.O, AutoButtonColor = false, ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = tb, CornerRadius = UDim.new(0,8)})
+    local tl = Utils.CreateInstance("TextLabel", {Name = "TextLabel1", Parent = tb, BackgroundTransparency = 1, Position = UDim2.new(0,8,0,0), Size = UDim2.new(1,-12,1,0), Font = Enum.Font.GothamMedium, Text = td.I.."  "..td.N, TextColor3 = td.N == "Home" and Color3.new(1,1,1) or NexusConfig.Theme.TextDim, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 14})
+    tb.MouseEnter:Connect(function() if NexusState.CurrentTab ~= td.N then Utils.Tween(tb, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.15) end end)
+    tb.MouseLeave:Connect(function() if NexusState.CurrentTab ~= td.N then Utils.Tween(tb, {BackgroundColor3 = NexusConfig.Theme.Secondary}, 0.15) end end)
+    tb.MouseButton1Click:Connect(function() UI.SwitchTab(td.N) end)
+    TabButtons[td.N] = tb
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- UI COMPONENTS
+-- ═══════════════════════════════════════════════════════════════
+function UI.CreateSection(pg, t)
+    local s = Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundTransparency = 1, Size = UDim2.new(1,0,0,24), ZIndex = 12})
+    Utils.CreateInstance("TextLabel", {Parent = s, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), Font = Enum.Font.GothamBold, Text = "── "..t:upper().." ──", TextColor3 = NexusConfig.Theme.Accent, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+end
+
+function UI.CreateToggle(pg, label, default, cb)
+    local state = default or false
+    local fr = Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,38), ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = fr, CornerRadius = UDim.new(0,8)})
+    Utils.CreateInstance("TextLabel", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(1,-60,1,0), Font = Enum.Font.GothamMedium, Text = label, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    local bg = Utils.CreateInstance("Frame", {Parent = fr, BackgroundColor3 = state and NexusConfig.Theme.Accent or NexusConfig.Theme.Tertiary, Size = UDim2.new(0,40,0,20), Position = UDim2.new(1,-52,0.5,-10), ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = bg, CornerRadius = UDim.new(1,0)})
+    local ci = Utils.CreateInstance("Frame", {Parent = bg, BackgroundColor3 = Color3.new(1,1,1), Size = UDim2.new(0,16,0,16), Position = state and UDim2.new(1,-18,0.5,-8) or UDim2.new(0,2,0.5,-8), ZIndex = 14})
+    Utils.CreateInstance("UICorner", {Parent = ci, CornerRadius = UDim.new(1,0)})
+    local btn = Utils.CreateInstance("TextButton", {Parent = fr, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), Text = "", ZIndex = 15})
+    btn.MouseButton1Click:Connect(function() state = not state; Utils.Tween(bg, {BackgroundColor3 = state and NexusConfig.Theme.Accent or NexusConfig.Theme.Tertiary}, 0.2); Utils.Tween(ci, {Position = state and UDim2.new(1,-18,0.5,-8) or UDim2.new(0,2,0.5,-8)}, 0.2); if cb then cb(state) end end)
+    fr.MouseEnter:Connect(function() Utils.Tween(fr, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.15) end)
+    fr.MouseLeave:Connect(function() Utils.Tween(fr, {BackgroundColor3 = NexusConfig.Theme.Secondary}, 0.15) end)
+    return {SetState = function(s) state = s; Utils.Tween(bg, {BackgroundColor3 = state and NexusConfig.Theme.Accent or NexusConfig.Theme.Tertiary}, 0.2); Utils.Tween(ci, {Position = state and UDim2.new(1,-18,0.5,-8) or UDim2.new(0,2,0.5,-8)}, 0.2) end, GetState = function() return state end}
+end
+
+function UI.CreateSlider(pg, label, mn, mx, def, cb)
+    local val = def or mn
+    local fr = Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,50), ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = fr, CornerRadius = UDim.new(0,8)})
+    local vl = Utils.CreateInstance("TextLabel", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(1,-60,0,4), Size = UDim2.new(0,50,0,18), Font = Enum.Font.GothamBold, Text = tostring(math.floor(val)), TextColor3 = NexusConfig.Theme.Accent, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 13})
+    Utils.CreateInstance("TextLabel", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,4), Size = UDim2.new(1,-80,0,18), Font = Enum.Font.GothamMedium, Text = label, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    local sbg = Utils.CreateInstance("Frame", {Parent = fr, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,-24,0,6), Position = UDim2.new(0,12,0,32), ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = sbg, CornerRadius = UDim.new(1,0)})
+    local sf = Utils.CreateInstance("Frame", {Parent = sbg, BackgroundColor3 = NexusConfig.Theme.Accent, Size = UDim2.new((val-mn)/(mx-mn),0,1,0), ZIndex = 14})
+    Utils.CreateInstance("UICorner", {Parent = sf, CornerRadius = UDim.new(1,0)})
+    local sk = Utils.CreateInstance("Frame", {Parent = sf, BackgroundColor3 = Color3.new(1,1,1), Size = UDim2.new(0,14,0,14), Position = UDim2.new(1,-7,0.5,-7), ZIndex = 15})
+    Utils.CreateInstance("UICorner", {Parent = sk, CornerRadius = UDim.new(1,0)})
+    Utils.CreateInstance("UIStroke", {Parent = sk, Color = NexusConfig.Theme.Accent, Thickness = 2, Transparency = 0.5})
+    local sb = Utils.CreateInstance("TextButton", {Parent = sbg, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,20), Position = UDim2.new(0,0,0,-10), Text = "", ZIndex = 16})
+    local sliding = false
+    local function upd(ix) local r = math.clamp((ix-sbg.AbsolutePosition.X)/sbg.AbsoluteSize.X,0,1); val = math.floor(mn+(mx-mn)*r); sf.Size = UDim2.new(r,0,1,0); vl.Text = tostring(val); if cb then cb(val) end end
+    sb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = true; upd(i.Position.X) end end)
+    UserInputService.InputChanged:Connect(function(i) if sliding and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then upd(i.Position.X) end end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = false end end)
+end
+
+function UI.CreateButton(pg, label, cb)
+    local b = Utils.CreateInstance("TextButton", {Parent = Pages[pg], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,36), Font = Enum.Font.GothamMedium, Text = "  "..label, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)}); Utils.CreateInstance("UIPadding", {Parent = b, PaddingLeft = UDim.new(0,10)})
+    b.MouseEnter:Connect(function() Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.15) end)
+    b.MouseLeave:Connect(function() Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Secondary}, 0.15) end)
+    b.MouseButton1Click:Connect(function() Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Accent}, 0.1); task.wait(0.1); Utils.Tween(b, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.15); if cb then cb() end end)
+end
+
+function UI.CreateTextbox(pg, label, ph, cb)
+    local fr = Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,38), ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = fr, CornerRadius = UDim.new(0,8)})
+    Utils.CreateInstance("TextLabel", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(0.4,0,1,0), Font = Enum.Font.GothamMedium, Text = label, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    local ib = Utils.CreateInstance("TextBox", {Parent = fr, BackgroundColor3 = NexusConfig.Theme.Tertiary, Position = UDim2.new(0.42,0,0.15,0), Size = UDim2.new(0.55,0,0.7,0), Font = Enum.Font.Gotham, Text = "", PlaceholderText = ph or "", PlaceholderColor3 = NexusConfig.Theme.TextDark, TextColor3 = NexusConfig.Theme.Text, TextSize = 11, ClearTextOnFocus = false, ZIndex = 14})
+    Utils.CreateInstance("UICorner", {Parent = ib, CornerRadius = UDim.new(0,6)}); Utils.CreateInstance("UIPadding", {Parent = ib, PaddingLeft = UDim.new(0,8)})
+    ib.FocusLost:Connect(function(e) if e and cb then cb(ib.Text) end end)
+    return ib
+end
+
+function UI.CreateDropdown(pg, label, opts, cb)
+    local exp = false; local sel = opts[1] or ""
+    local fr = Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,38), ClipsDescendants = true, ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = fr, CornerRadius = UDim.new(0,8)})
+    Utils.CreateInstance("TextLabel", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(0.4,0,0,38), Font = Enum.Font.GothamMedium, Text = label, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    local sl = Utils.CreateInstance("TextButton", {Parent = fr, BackgroundColor3 = NexusConfig.Theme.Tertiary, Position = UDim2.new(0.42,0,0,5), Size = UDim2.new(0.55,0,0,28), Font = Enum.Font.Gotham, Text = "  "..sel.."  ▼", TextColor3 = NexusConfig.Theme.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 14})
+    Utils.CreateInstance("UICorner", {Parent = sl, CornerRadius = UDim.new(0,6)})
+    local oc = Utils.CreateInstance("Frame", {Parent = fr, BackgroundTransparency = 1, Position = UDim2.new(0.42,0,0,38), Size = UDim2.new(0.55,0,0,#opts*28), ZIndex = 14})
+    Utils.CreateInstance("UIListLayout", {Parent = oc, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,2)})
+    for _, o in ipairs(opts) do
+        local ob = Utils.CreateInstance("TextButton", {Parent = oc, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,0,0,26), Font = Enum.Font.Gotham, Text = "  "..o, TextColor3 = NexusConfig.Theme.TextDim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, ZIndex = 15})
+        Utils.CreateInstance("UICorner", {Parent = ob, CornerRadius = UDim.new(0,4)})
+        ob.MouseEnter:Connect(function() Utils.Tween(ob, {BackgroundColor3 = NexusConfig.Theme.Accent}, 0.1) end)
+        ob.MouseLeave:Connect(function() Utils.Tween(ob, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.1) end)
+        ob.MouseButton1Click:Connect(function() sel = o; sl.Text = "  "..sel.."  ▼"; exp = false; Utils.Tween(fr, {Size = UDim2.new(1,0,0,38)}, 0.2); if cb then cb(sel) end end)
+    end
+    sl.MouseButton1Click:Connect(function() exp = not exp; Utils.Tween(fr, {Size = UDim2.new(1,0,0,exp and (38+#opts*30+8) or 38)}, 0.25) end)
+end
+
+function UI.CreateLabel(pg, t, c)
+    return Utils.CreateInstance("TextLabel", {Parent = Pages[pg], BackgroundTransparency = 1, Size = UDim2.new(1,0,0,20), Font = Enum.Font.Gotham, Text = t, TextColor3 = c or NexusConfig.Theme.TextDim, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, ZIndex = 13})
+end
+
+function UI.CreateSpacer(pg, h) Utils.CreateInstance("Frame", {Parent = Pages[pg], BackgroundTransparency = 1, Size = UDim2.new(1,0,0,h or 6)}) end
+
+-- ═══════════════════════════════════════════════════════════════
+-- ALL PAGES (Same features as v3.1)
+-- ═══════════════════════════════════════════════════════════════
+
+-- HOME
+do
+    UI.CreateSection("Home", "Welcome"); UI.CreateLabel("Home", "⚡ NEXUS ULTRA v3.1 - BY MMNWD", NexusConfig.Theme.Accent)
+    UI.CreateLabel("Home", "✅ Terms accepted. Full access granted.  |  Press "..NexusConfig.ToggleKey.Name.." to toggle", NexusConfig.Theme.Success)
+    UI.CreateSpacer("Home"); UI.CreateSection("Home", "Quick Actions")
+    UI.CreateButton("Home", "🎮  Rejoin Server", function() TeleportService:Teleport(game.PlaceId, Player) end)
+    UI.CreateButton("Home", "📋  Copy Game ID", function() Utils.CopyToClipboard(tostring(game.PlaceId)); Utils.Notify("Clipboard", "ID: "..game.PlaceId, "Success") end)
+    UI.CreateButton("Home", "🔗  Copy Server Link", function() Utils.CopyToClipboard("roblox://experiences/start?placeId="..game.PlaceId.."&gameInstanceId="..game.JobId); Utils.Notify("Clipboard", "Link copied!", "Success") end)
+end
+
+-- PLAYER
+do
+    UI.CreateSection("Player", "Character")
+    UI.CreateSlider("Player", "WalkSpeed", 0, 500, 16, function(v) NexusState.WalkSpeed = v; local h = Utils.GetHumanoid(); if h then h.WalkSpeed = v end end)
+    UI.CreateSlider("Player", "JumpPower", 0, 500, 50, function(v) NexusState.JumpPower = v; local h = Utils.GetHumanoid(); if h then h.JumpPower = v; h.UseJumpPower = true end end)
+    UI.CreateSlider("Player", "Gravity", 0, 500, 196, function(v) Workspace.Gravity = v end)
+    UI.CreateSpacer("Player"); UI.CreateSection("Player", "Toggles")
+    UI.CreateToggle("Player", "God Mode", false, function(s) NexusState.GodMode = s; local h = Utils.GetHumanoid(); if h and s then h.MaxHealth = math.huge; h.Health = math.huge end end)
+    UI.CreateToggle("Player", "Infinite Jump", false, function(s) NexusState.InfiniteJump = s; if s then Utils.AddConnection("InfJump", UserInputService.JumpRequest:Connect(function() local h = Utils.GetHumanoid(); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end)) else Utils.RemoveConnection("InfJump") end end)
+    UI.CreateToggle("Player", "Anti-AFK", true, function(s) NexusState.AntiAFK = s end)
+    UI.CreateToggle("Player", "Click TP (Ctrl+Click)", false, function(s) NexusState.ClickTP = s; if s then Utils.AddConnection("ClickTP", Mouse.Button1Down:Connect(function() if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then local r = Utils.GetRootPart(); if r and Mouse.Hit then r.CFrame = Mouse.Hit+Vector3.new(0,3,0) end end end)) else Utils.RemoveConnection("ClickTP") end end)
+    UI.CreateSpacer("Player"); UI.CreateSection("Player", "Actions")
+    UI.CreateButton("Player", "💀  Respawn", function() local c = Utils.GetCharacter(); if c then c:BreakJoints() end end)
+    UI.CreateButton("Player", "📏  Copy Position", function() local r = Utils.GetRootPart(); if r then local t = string.format("%.1f, %.1f, %.1f", r.Position.X, r.Position.Y, r.Position.Z); Utils.CopyToClipboard(t); Utils.Notify("Position", t, "Info") end end)
+end
+
+-- MOVEMENT
+do
+    UI.CreateSection("Movement", "Flight")
+    UI.CreateToggle("Movement", "Fly", false, function(s)
+        NexusState.Fly = s
+        if s then local r = Utils.GetRootPart(); local h = Utils.GetHumanoid(); if not r or not h then return end
+            local bv = Instance.new("BodyVelocity"); bv.Name = "NexusFly"; bv.MaxForce = Vector3.one*math.huge; bv.Velocity = Vector3.zero; bv.Parent = r
+            local bg = Instance.new("BodyGyro"); bg.Name = "NexusFlyGyro"; bg.MaxTorque = Vector3.one*math.huge; bg.P = 9e4; bg.D = 500; bg.Parent = r; h.PlatformStand = true
+            Utils.AddConnection("FlyLoop", RunService.RenderStepped:Connect(function()
+                if not NexusState.Fly then return end; local rr = Utils.GetRootPart(); if not rr then return end
+                local bvv = rr:FindFirstChild("NexusFly"); local bgg = rr:FindFirstChild("NexusFlyGyro"); if not bvv or not bgg then return end
+                local md = Vector3.zero
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then md += Camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then md -= Camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then md -= Camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then md += Camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then md += Vector3.yAxis end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then md -= Vector3.yAxis end
+                if md.Magnitude > 0 then md = md.Unit end; bvv.Velocity = md * NexusState.FlySpeed; bgg.CFrame = Camera.CFrame
+            end))
+        else local r = Utils.GetRootPart(); local h = Utils.GetHumanoid()
+            if r then local bv = r:FindFirstChild("NexusFly"); local bg = r:FindFirstChild("NexusFlyGyro"); if bv then bv:Destroy() end; if bg then bg:Destroy() end end
+            if h then h.PlatformStand = false end; Utils.RemoveConnection("FlyLoop")
+        end
+    end)
+    UI.CreateSlider("Movement", "Fly Speed", 1, 500, 50, function(v) NexusState.FlySpeed = v end)
+    UI.CreateSpacer("Movement"); UI.CreateSection("Movement", "Noclip")
+    UI.CreateToggle("Movement", "Noclip", false, function(s) NexusState.Noclip = s
+        if s then Utils.AddConnection("Noclip", RunService.Stepped:Connect(function() if NexusState.Noclip then local c = Utils.GetCharacter(); if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end end end))
+        else Utils.RemoveConnection("Noclip") end
+    end)
+    UI.CreateSpacer("Movement"); UI.CreateSection("Movement", "Freecam")
+    UI.CreateToggle("Movement", "Freecam", false, function(s) NexusState.Freecam = s
+        if s then Camera.CameraType = Enum.CameraType.Scriptable
+            Utils.AddConnection("Freecam", RunService.RenderStepped:Connect(function() if not NexusState.Freecam then return end; local sp = NexusState.FreecamSpeed; if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then sp *= 3 end; local md = Vector3.zero
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then md += Camera.CFrame.LookVector end; if UserInputService:IsKeyDown(Enum.KeyCode.S) then md -= Camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then md -= Camera.CFrame.RightVector end; if UserInputService:IsKeyDown(Enum.KeyCode.D) then md += Camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.E) then md += Vector3.yAxis end; if UserInputService:IsKeyDown(Enum.KeyCode.Q) then md -= Vector3.yAxis end; Camera.CFrame = Camera.CFrame + md*sp end))
+        else Utils.RemoveConnection("Freecam"); Camera.CameraType = Enum.CameraType.Custom; Camera.CameraSubject = Utils.GetHumanoid() end
+    end)
+    UI.CreateSlider("Movement", "Freecam Speed", 1, 20, 1, function(v) NexusState.FreecamSpeed = v end)
+end
+
+-- VISUALS
+do
+    UI.CreateSection("Visuals", "ESP"); UI.CreateToggle("Visuals", "Player ESP", false, function(s) NexusState.ESP = s end)
+    UI.CreateToggle("Visuals", "Chams/Highlights", false, function(s) NexusState.Chams = s; if not s then for _, p in ipairs(Players:GetPlayers()) do if p.Character then local h = p.Character:FindFirstChild("NexusHighlight"); if h then h:Destroy() end end end end end)
+    UI.CreateToggle("Visuals", "Tracers", false, function(s) NexusState.Tracers = s end)
+    UI.CreateSpacer("Visuals"); UI.CreateSection("Visuals", "Rendering")
+    UI.CreateToggle("Visuals", "Fullbright", false, function(s) if s then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.Ambient = Color3.fromRGB(178,178,178) end end)
+    UI.CreateToggle("Visuals", "No Fog", false, function(s) if s then Lighting.FogEnd = 999999; Lighting.FogStart = 999999 end end)
+    UI.CreateToggle("Visuals", "X-Ray", false, function(s) NexusState.Xray = s; for _, p in ipairs(Workspace:GetDescendants()) do if p:IsA("BasePart") and not Players:GetPlayerFromCharacter(p.Parent) then if s then if p.Transparency < 0.5 then p:SetAttribute("NOT", p.Transparency); p.Transparency = 0.7 end else local o = p:GetAttribute("NOT"); if o then p.Transparency = o end end end end end)
+    UI.CreateSpacer("Visuals"); UI.CreateSection("Visuals", "Camera")
+    UI.CreateSlider("Visuals", "Time of Day", 0, 24, 14, function(v) Lighting.ClockTime = v end)
+    UI.CreateSlider("Visuals", "FOV", 30, 120, 70, function(v) Camera.FieldOfView = v end)
+end
+
+-- TELEPORT
+do
+    UI.CreateSection("Teleport", "Player TP")
+    UI.CreateTextbox("Teleport", "TP to Player", "Name...", function(t) local tg = Utils.FindPlayer(t); if #tg > 0 and tg[1].Character and tg[1].Character:FindFirstChild("HumanoidRootPart") then local r = Utils.GetRootPart(); if r then r.CFrame = tg[1].Character.HumanoidRootPart.CFrame*CFrame.new(0,0,-5); Utils.Notify("TP", "TP'd to "..tg[1].DisplayName, "Success") end end end)
+    UI.CreateTextbox("Teleport", "TP to Coords", "X, Y, Z", function(t) local c = {}; for n in t:gmatch("([%-]?%d+%.?%d*)") do table.insert(c, tonumber(n)) end; if #c >= 3 then local r = Utils.GetRootPart(); if r then r.CFrame = CFrame.new(c[1],c[2],c[3]) end end end)
+    UI.CreateSpacer("Teleport"); UI.CreateSection("Teleport", "Waypoints")
+    UI.CreateTextbox("Teleport", "Save Waypoint", "Name...", function(n) if n ~= "" then local r = Utils.GetRootPart(); if r then NexusState.Waypoints[n] = r.CFrame; Utils.Notify("WP", "Saved: "..n, "Success") end end end)
+    UI.CreateTextbox("Teleport", "Load Waypoint", "Name...", function(n) if NexusState.Waypoints[n] then local r = Utils.GetRootPart(); if r then r.CFrame = NexusState.Waypoints[n] end end end)
+    UI.CreateSpacer("Teleport"); UI.CreateSection("Teleport", "Quick TP")
+    UI.CreateButton("Teleport", "🔀  TP Random Player", function() local o = {}; for _, p in ipairs(Players:GetPlayers()) do if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then table.insert(o, p) end end; if #o > 0 then local r = Utils.GetRootPart(); if r then r.CFrame = o[math.random(#o)].Character.HumanoidRootPart.CFrame*CFrame.new(0,0,-5) end end end)
+    UI.CreateButton("Teleport", "🔄  Server Hop", function() pcall(function() local s = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")); for _, sv in ipairs(s.data) do if sv.id ~= game.JobId and sv.playing < sv.maxPlayers then TeleportService:TeleportToPlaceInstance(game.PlaceId, sv.id, Player); return end end end) end)
+end
+
+-- SERVER
+do
+    UI.CreateSection("Server", "Players")
+    UI.CreateButton("Server", "📋  Copy All Names", function() local n = {}; for _, p in ipairs(Players:GetPlayers()) do table.insert(n, p.Name) end; Utils.CopyToClipboard(table.concat(n, "\n")); Utils.Notify("Server", #n.." names copied!", "Success") end)
+    UI.CreateButton("Server", "📊  Server Age", function() local e = Workspace.DistributedGameTime; Utils.Notify("Server", string.format("%dh %dm %ds", math.floor(e/3600), math.floor(e%3600/60), math.floor(e%60)), "Info") end)
+end
+
+-- WORLD
+do
+    UI.CreateSection("World", "Lighting")
+    UI.CreateButton("World", "🌅  Day", function() Lighting.ClockTime = 14 end); UI.CreateButton("World", "🌙  Night", function() Lighting.ClockTime = 0 end)
+    UI.CreateSpacer("World"); UI.CreateSection("World", "Anti-Lag")
+    UI.CreateButton("World", "⚡  MEGA Anti-Lag", function() local c = 0; for _, v in ipairs(Workspace:GetDescendants()) do if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") or v:IsA("Decal") or v:IsA("Texture") or v:IsA("Sound") then v:Destroy(); c += 1 end end; Lighting.GlobalShadows = false; Utils.Notify("World", c.." objects removed!", "Success") end)
+    UI.CreateButton("World", "🔓  Unlock All", function() local c = 0; for _, o in ipairs(Workspace:GetDescendants()) do pcall(function() if o:IsA("BasePart") and o.Locked then o.Locked = false; c += 1 end end) end; Utils.Notify("World", c.." unlocked!", "Success") end)
+end
+
+-- FUN
+do
+    UI.CreateSection("Fun", "Effects")
+    UI.CreateButton("Fun", "🔥  Fire Character", function() local c = Utils.GetCharacter(); if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then Instance.new("Fire").Parent = p end end end end)
+    UI.CreateButton("Fun", "✨  Sparkle", function() local c = Utils.GetCharacter(); if c then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then Instance.new("Sparkles").Parent = p end end end end)
+    UI.CreateButton("Fun", "🧹  Remove Effects", function() local c = Utils.GetCharacter(); if c then for _, v in ipairs(c:GetDescendants()) do if v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then v:Destroy() end end end end)
+    UI.CreateButton("Fun", "🌈  Rainbow", function() task.spawn(function() local h = 0; Utils.AddConnection("Rainbow", RunService.RenderStepped:Connect(function() h = (h+1)%360; local c = Color3.fromHSV(h/360,1,1); local ch = Utils.GetCharacter(); if ch then for _, p in ipairs(ch:GetDescendants()) do if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.Color = c end end end end)) end) end)
+    UI.CreateButton("Fun", "⬛  Stop Rainbow", function() Utils.RemoveConnection("Rainbow") end)
+end
+
+-- COMBAT
+do
+    UI.CreateSection("Combat", "Aim")
+    UI.CreateToggle("Combat", "Aimbot (Hold RMB)", false, function(s)
+        if s then Utils.AddConnection("Aimbot", RunService.RenderStepped:Connect(function() if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
+            local n, d = nil, math.huge; for _, p in ipairs(Players:GetPlayers()) do if p ~= Player and p.Character and p.Character:FindFirstChild("Head") then local sp, on = Camera:WorldToScreenPoint(p.Character.Head.Position); if on then local dd = (Vector2.new(sp.X,sp.Y)-UserInputService:GetMouseLocation()).Magnitude; if dd < d and dd < 500 then d = dd; n = p.Character.Head end end end end
+            if n then Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, n.Position) end end))
+        else Utils.RemoveConnection("Aimbot") end
+    end)
+end
+
+-- DEX EXPLORER
+do
+    UI.CreateSection("Dex", "Instance Explorer")
+    UI.CreateLabel("Dex", "Browse the game hierarchy. Double-click to enter, Back to go up.", NexusConfig.Theme.TextDim)
+    
+    local dexPath = {game}
+    local dexPathLabel = Utils.CreateInstance("TextLabel", {Parent = Pages["Dex"], BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,0,0,28), Font = Enum.Font.Code, Text = "📂 game", TextColor3 = NexusConfig.Theme.Accent, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = dexPathLabel, CornerRadius = UDim.new(0,6)}); Utils.CreateInstance("UIPadding", {Parent = dexPathLabel, PaddingLeft = UDim.new(0,8)})
+    
+    local dexSearch = Utils.CreateInstance("TextBox", {Parent = Pages["Dex"], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,30), Font = Enum.Font.Gotham, Text = "", PlaceholderText = "🔎 Search...", PlaceholderColor3 = NexusConfig.Theme.TextDark, TextColor3 = NexusConfig.Theme.Text, TextSize = 11, ClearTextOnFocus = false, ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = dexSearch, CornerRadius = UDim.new(0,8)}); Utils.CreateInstance("UIPadding", {Parent = dexSearch, PaddingLeft = UDim.new(0,10)})
+    
+    local dexFrame = Utils.CreateInstance("Frame", {Parent = Pages["Dex"], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,300), ClipsDescendants = true, ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = dexFrame, CornerRadius = UDim.new(0,8)})
+    local dexScroll = Utils.CreateInstance("ScrollingFrame", {Parent = dexFrame, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), ScrollBarThickness = 3, ScrollBarImageColor3 = NexusConfig.Theme.Accent, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 13})
+    Utils.CreateInstance("UIListLayout", {Parent = dexScroll, SortOrder = Enum.SortOrder.Name, Padding = UDim.new(0,1)}); Utils.CreateInstance("UIPadding", {Parent = dexScroll, PaddingLeft = UDim.new(0,4), PaddingRight = UDim.new(0,4), PaddingTop = UDim.new(0,4)})
+    
+    local icons = {Folder="📁",Part="🧱",Model="📦",Script="📜",LocalScript="📗",ModuleScript="📘",RemoteEvent="📡",RemoteFunction="📞",Frame="🖼️",Sound="🔊",Tool="🔧",Humanoid="🧍",Camera="📷"}
+    
+    local function refreshDex(filter)
+        for _, c in ipairs(dexScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+        local cur = dexPath[#dexPath]; local ps = "📂 "
+        for i, inst in ipairs(dexPath) do if i > 1 then ps = ps.."." end; ps = ps..(inst == game and "game" or inst.Name) end; dexPathLabel.Text = ps
+        local ch = {}; pcall(function() ch = cur:GetChildren() end); table.sort(ch, function(a,b) return a.Name:lower() < b.Name:lower() end)
+        for _, child in ipairs(ch) do
+            if filter and filter ~= "" and not child.Name:lower():find(filter:lower()) and not child.ClassName:lower():find(filter:lower()) then continue end
+            local ic = icons[child.ClassName] or "📄"; local cc = 0; pcall(function() cc = #child:GetChildren() end)
+            local eb = Utils.CreateInstance("TextButton", {Parent = dexScroll, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,-8,0,26), Text = "", AutoButtonColor = false, ZIndex = 14})
+            Utils.CreateInstance("UICorner", {Parent = eb, CornerRadius = UDim.new(0,4)})
+            Utils.CreateInstance("TextLabel", {Parent = eb, BackgroundTransparency = 1, Position = UDim2.new(0,6,0,0), Size = UDim2.new(0.5,0,1,0), Font = Enum.Font.GothamMedium, Text = ic.." "..child.Name, TextColor3 = NexusConfig.Theme.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 15})
+            Utils.CreateInstance("TextLabel", {Parent = eb, BackgroundTransparency = 1, Position = UDim2.new(0.52,0,0,0), Size = UDim2.new(0.35,0,1,0), Font = Enum.Font.Gotham, Text = child.ClassName..(cc > 0 and " ["..cc.."]" or ""), TextColor3 = NexusConfig.Theme.TextDark, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15})
+            local cpb = Utils.CreateInstance("TextButton", {Parent = eb, BackgroundColor3 = NexusConfig.Theme.Info, Position = UDim2.new(1,-26,0,3), Size = UDim2.new(0,22,0,20), Font = Enum.Font.GothamBold, Text = "📋", TextSize = 9, AutoButtonColor = false, ZIndex = 16})
+            Utils.CreateInstance("UICorner", {Parent = cpb, CornerRadius = UDim.new(0,4)})
+            cpb.MouseButton1Click:Connect(function() Utils.CopyToClipboard(child:GetFullName()); Utils.Notify("Dex", "Copied: "..child:GetFullName(), "Success") end)
+            eb.MouseEnter:Connect(function() Utils.Tween(eb, {BackgroundColor3 = NexusConfig.Theme.Accent}, 0.1) end)
+            eb.MouseLeave:Connect(function() Utils.Tween(eb, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.1) end)
+            eb.MouseButton1Down:Connect(function() local lc = eb:GetAttribute("LC") or 0; if tick()-lc < 0.4 then table.insert(dexPath, child); refreshDex() end; eb:SetAttribute("LC", tick()) end)
+        end
+    end
+    dexSearch.Changed:Connect(function(p) if p == "Text" then refreshDex(dexSearch.Text) end end)
+    
+    UI.CreateButton("Dex", "⬆️  Go Back", function() if #dexPath > 1 then table.remove(dexPath); refreshDex() end end)
+    UI.CreateButton("Dex", "🏠  Go to Root", function() dexPath = {game}; refreshDex() end)
+    UI.CreateSpacer("Dex"); UI.CreateSection("Dex", "Quick Navigate")
+    for _, nav in ipairs({{"Workspace",Workspace},{"Players",Players},{"ReplicatedStorage",ReplicatedStorage},{"Lighting",Lighting}}) do
+        UI.CreateButton("Dex", "📂  "..nav[1], function() dexPath = {game, nav[2]}; refreshDex() end)
+    end
+    refreshDex()
+end
+
+-- REMOTE SPY
+do
+    UI.CreateSection("RemoteSpy", "Remote Spy"); UI.CreateLabel("RemoteSpy", "Monitor RemoteEvent/Function calls in real-time.", NexusConfig.Theme.TextDim)
+    UI.CreateToggle("RemoteSpy", "Enable Remote Spy", false, function(s) NexusState.RemoteSpyEnabled = s; Utils.Notify("Spy", s and "Spy activated!" or "Spy off", s and "Success" or "Warning") end)
+    UI.CreateDropdown("RemoteSpy", "Filter", {"All","RemoteEvent","RemoteFunction"}, function(s) NexusState.RemoteSpyFilter = s end)
+    local logLabel = UI.CreateLabel("RemoteSpy", "📊 Logged: 0", NexusConfig.Theme.Info)
+    
+    local spyFrame = Utils.CreateInstance("Frame", {Parent = Pages["RemoteSpy"], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,280), ClipsDescendants = true, ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = spyFrame, CornerRadius = UDim.new(0,8)})
+    local spyScroll = Utils.CreateInstance("ScrollingFrame", {Parent = spyFrame, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), ScrollBarThickness = 3, ScrollBarImageColor3 = NexusConfig.Theme.Accent, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 13})
+    Utils.CreateInstance("UIListLayout", {Parent = spyScroll, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,1)}); Utils.CreateInstance("UIPadding", {Parent = spyScroll, PaddingLeft = UDim.new(0,4), PaddingRight = UDim.new(0,4), PaddingTop = UDim.new(0,2)})
+    
+    local spyOrder = 0
+    local function addLog(rType, rName, rPath, args)
+        if NexusState.RemoteSpyFilter ~= "All" and rType ~= NexusState.RemoteSpyFilter then return end
+        for _, bl in ipairs(NexusState.RemoteSpyBlacklist) do if rName:lower():find(bl:lower()) then return end end
+        spyOrder += 1; local o = spyOrder; local tc = rType == "RemoteFunction" and NexusConfig.Theme.Warning or NexusConfig.Theme.Info; local ti = rType == "RemoteFunction" and "📞" or "📡"
+        local as = Utils.SerializeArgs(args or {}); if #as > 150 then as = as:sub(1,150).."..." end
+        local le = Utils.CreateInstance("Frame", {Parent = spyScroll, BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,-8,0,38), LayoutOrder = -o, ZIndex = 14})
+        Utils.CreateInstance("UICorner", {Parent = le, CornerRadius = UDim.new(0,4)})
+        Utils.CreateInstance("TextLabel", {Parent = le, BackgroundTransparency = 1, Position = UDim2.new(0,4,0,2), Size = UDim2.new(0.08,0,0,16), Font = Enum.Font.GothamBold, Text = ti, TextColor3 = tc, TextSize = 10, ZIndex = 15})
+        Utils.CreateInstance("TextLabel", {Parent = le, BackgroundTransparency = 1, Position = UDim2.new(0.08,0,0,2), Size = UDim2.new(0.5,0,0,16), Font = Enum.Font.GothamMedium, Text = rName, TextColor3 = NexusConfig.Theme.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 15})
+        Utils.CreateInstance("TextLabel", {Parent = le, BackgroundTransparency = 1, Position = UDim2.new(0.04,0,0,18), Size = UDim2.new(0.86,0,0,16), Font = Enum.Font.Code, Text = as ~= "" and as or "(no args)", TextColor3 = NexusConfig.Theme.TextDim, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 15})
+        local csb = Utils.CreateInstance("TextButton", {Parent = le, BackgroundColor3 = NexusConfig.Theme.Accent, Position = UDim2.new(1,-50,0,3), Size = UDim2.new(0,20,0,14), Font = Enum.Font.GothamBold, Text = "📜", TextSize = 8, AutoButtonColor = false, ZIndex = 16})
+        Utils.CreateInstance("UICorner", {Parent = csb, CornerRadius = UDim.new(0,3)})
+        csb.MouseButton1Click:Connect(function() Utils.CopyToClipboard(Utils.GenerateScript(rPath, rType, args or {})); Utils.Notify("Spy", "Script copied!", "Success") end)
+        local cpb = Utils.CreateInstance("TextButton", {Parent = le, BackgroundColor3 = NexusConfig.Theme.Info, Position = UDim2.new(1,-26,0,3), Size = UDim2.new(0,20,0,14), Font = Enum.Font.GothamBold, Text = "📋", TextSize = 8, AutoButtonColor = false, ZIndex = 16})
+        Utils.CreateInstance("UICorner", {Parent = cpb, CornerRadius = UDim.new(0,3)})
+        cpb.MouseButton1Click:Connect(function() Utils.CopyToClipboard(rPath); Utils.Notify("Spy", "Path: "..rPath, "Success") end)
+        le.MouseEnter:Connect(function() Utils.Tween(le, {BackgroundColor3 = NexusConfig.Theme.Secondary}, 0.1) end)
+        le.MouseLeave:Connect(function() Utils.Tween(le, {BackgroundColor3 = NexusConfig.Theme.Tertiary}, 0.1) end)
+        local ch = {}; for _, c in ipairs(spyScroll:GetChildren()) do if c:IsA("Frame") then table.insert(ch, c) end end
+        if #ch > NexusState.RemoteSpyMaxLogs then table.sort(ch, function(a,b) return a.LayoutOrder < b.LayoutOrder end); ch[1]:Destroy() end
+        logLabel.Text = "📊 Logged: "..spyOrder
+        table.insert(NexusState.RemoteSpyLogs, {Type=rType, Name=rName, Path=rPath, Args=as})
+    end
+    
+    -- Hook
+    task.spawn(function()
+        pcall(function()
+            if hookmetamethod then
+                local old; old = hookmetamethod(game, "__namecall", function(self, ...)
+                    local m = getnamecallmethod(); local a = {...}
+                    if NexusState.RemoteSpyEnabled then
+                        if m == "FireServer" and self:IsA("RemoteEvent") then addLog("RemoteEvent", self.Name, self:GetFullName(), a)
+                        elseif m == "InvokeServer" and self:IsA("RemoteFunction") then addLog("RemoteFunction", self.Name, self:GetFullName(), a) end
+                    end; return old(self, ...)
+                end)
+            end
+        end)
+    end)
+    
+    UI.CreateSpacer("RemoteSpy"); UI.CreateSection("RemoteSpy", "Tools")
+    UI.CreateButton("RemoteSpy", "🗑️  Clear Logs", function() for _, c in ipairs(spyScroll:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end; spyOrder = 0; NexusState.RemoteSpyLogs = {}; logLabel.Text = "📊 Logged: 0" end)
+    UI.CreateButton("RemoteSpy", "📋  Copy All Logs", function() local t = ""; for _, l in ipairs(NexusState.RemoteSpyLogs) do t = t..string.format("[%s] %s | %s\n", l.Type, l.Name, l.Args) end; Utils.CopyToClipboard(t); Utils.Notify("Spy", #NexusState.RemoteSpyLogs.." entries copied!", "Success") end)
+    UI.CreateButton("RemoteSpy", "📊  List All Remotes", function() local c = 0; local t = ""; for _, v in ipairs(game:GetDescendants()) do pcall(function() if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then t = t..v:GetFullName().."\n"; c += 1 end end) end; Utils.CopyToClipboard(t); Utils.Notify("Spy", c.." remotes copied!", "Success") end)
+    UI.CreateTextbox("RemoteSpy", "Blacklist", "Remote name...", function(t) if t ~= "" then table.insert(NexusState.RemoteSpyBlacklist, t); Utils.Notify("Spy", "Blacklisted: "..t, "Info") end end)
+end
+
+-- CONSOLE
+do
+    UI.CreateSection("Console", "Command Line")
+    local coFrame = Utils.CreateInstance("Frame", {Parent = Pages["Console"], BackgroundColor3 = NexusConfig.Theme.Tertiary, Size = UDim2.new(1,0,0,200), ClipsDescendants = true, ZIndex = 12})
+    Utils.CreateInstance("UICorner", {Parent = coFrame, CornerRadius = UDim.new(0,8)})
+    local coScroll = Utils.CreateInstance("ScrollingFrame", {Parent = coFrame, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0), ScrollBarThickness = 3, ScrollBarImageColor3 = NexusConfig.Theme.Accent, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0), ZIndex = 13})
+    Utils.CreateInstance("UIListLayout", {Parent = coScroll, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0,1)}); Utils.CreateInstance("UIPadding", {Parent = coScroll, PaddingLeft = UDim.new(0,6), PaddingTop = UDim.new(0,4)})
+    local lo = 0; local function clog(t, c) lo += 1; Utils.CreateInstance("TextLabel", {Parent = coScroll, BackgroundTransparency = 1, Size = UDim2.new(1,-12,0,14), Font = Enum.Font.Code, Text = os.date("[%H:%M:%S] ")..t, TextColor3 = c or NexusConfig.Theme.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, LayoutOrder = lo, ZIndex = 14}); coScroll.CanvasPosition = Vector2.new(0, coScroll.AbsoluteCanvasSize.Y) end
+    clog("NEXUS ULTRA v3.1 - BY MMNWD | Type ;help", NexusConfig.Theme.Accent)
+    local ci = Utils.CreateInstance("TextBox", {Parent = Pages["Console"], BackgroundColor3 = NexusConfig.Theme.Secondary, Size = UDim2.new(1,0,0,36), Font = Enum.Font.Code, Text = "", PlaceholderText = ";command...", PlaceholderColor3 = NexusConfig.Theme.TextDark, TextColor3 = NexusConfig.Theme.Text, TextSize = 12, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13})
+    Utils.CreateInstance("UICorner", {Parent = ci, CornerRadius = UDim.new(0,8)}); Utils.CreateInstance("UIPadding", {Parent = ci, PaddingLeft = UDim.new(0,10)})
+    
+    local Cmds = {}
+    local function reg(n, a, d, u, cb) local c = {N=n,A=a or {},D=d or "",U=u or n,C=cb}; Cmds[n:lower()] = c; for _, al in ipairs(a or {}) do Cmds[al:lower()] = c end end
+    
+    reg("speed", {"ws"}, "Set speed", "speed [v]", function(a) local v = tonumber(a[1]) or 16; local h = Utils.GetHumanoid(); if h then h.WalkSpeed = v end; clog("Speed: "..v, NexusConfig.Theme.Success) end)
+    reg("jumppower", {"jp"}, "Set jump", "jp [v]", function(a) local v = tonumber(a[1]) or 50; local h = Utils.GetHumanoid(); if h then h.JumpPower = v; h.UseJumpPower = true end; clog("JP: "..v, NexusConfig.Theme.Success) end)
+    reg("gravity", {"grav"}, "Set gravity", "grav [v]", function(a) Workspace.Gravity = tonumber(a[1]) or 196.2; clog("Gravity set", NexusConfig.Theme.Success) end)
+    reg("tp", {"goto"}, "TP to player", "tp [name]", function(a) local t = Utils.FindPlayer(a[1] or ""); if #t > 0 and t[1].Character and t[1].Character:FindFirstChild("HumanoidRootPart") then local r = Utils.GetRootPart(); if r then r.CFrame = t[1].Character.HumanoidRootPart.CFrame*CFrame.new(0,0,-5) end; clog("TP'd to "..t[1].Name, NexusConfig.Theme.Success) else clog("Not found", NexusConfig.Theme.Error) end end)
+    reg("fly", {}, "Toggle fly", "fly", function() NexusState.Fly = not NexusState.Fly; clog("Fly "..(NexusState.Fly and "on" or "off"), NexusConfig.Theme.Success) end)
+    reg("noclip", {"nc"}, "Toggle noclip", "nc", function() NexusState.Noclip = not NexusState.Noclip; if NexusState.Noclip then Utils.AddConnection("Noclip", RunService.Stepped:Connect(function() local c = Utils.GetCharacter(); if c and NexusState.Noclip then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end end)) else Utils.RemoveConnection("Noclip") end; clog("Noclip "..(NexusState.Noclip and "on" or "off"), NexusConfig.Theme.Success) end)
+    reg("god", {}, "God mode", "god", function() NexusState.GodMode = not NexusState.GodMode; local h = Utils.GetHumanoid(); if h and NexusState.GodMode then h.MaxHealth = math.huge; h.Health = math.huge end; clog("God "..(NexusState.GodMode and "on" or "off"), NexusConfig.Theme.Success) end)
+    reg("esp", {}, "Toggle ESP", "esp", function() NexusState.ESP = not NexusState.ESP; clog("ESP "..(NexusState.ESP and "on" or "off"), NexusConfig.Theme.Success) end)
+    reg("fullbright", {"fb"}, "Fullbright", "fb", function() Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false; Lighting.Ambient = Color3.fromRGB(178,178,178); clog("Fullbright on", NexusConfig.Theme.Success) end)
+    reg("fov", {}, "Set FOV", "fov [v]", function(a) Camera.FieldOfView = math.clamp(tonumber(a[1]) or 70, 1, 120); clog("FOV set", NexusConfig.Theme.Success) end)
+    reg("respawn", {"re"}, "Respawn", "re", function() local c = Utils.GetCharacter(); if c then c:BreakJoints() end end)
+    reg("rejoin", {"rj"}, "Rejoin", "rj", function() TeleportService:Teleport(game.PlaceId, Player) end)
+    reg("infjump", {"ij"}, "Inf jump", "ij", function() NexusState.InfiniteJump = not NexusState.InfiniteJump; if NexusState.InfiniteJump then Utils.AddConnection("InfJump", UserInputService.JumpRequest:Connect(function() local h = Utils.GetHumanoid(); if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end end)) else Utils.RemoveConnection("InfJump") end; clog("InfJump "..(NexusState.InfiniteJump and "on" or "off"), NexusConfig.Theme.Success) end)
+    reg("platform", {"plat"}, "Create platform", "plat", function() local r = Utils.GetRootPart(); if r then local p = Instance.new("Part"); p.Size = Vector3.new(20,1,20); p.Position = r.Position-Vector3.new(0,3,0); p.Anchored = true; p.Material = Enum.Material.Neon; p.Color = NexusConfig.Theme.Accent; p.Transparency = 0.3; p.Parent = Workspace end end)
+    reg("btools", {}, "Give btools", "btools", function() for _, n in ipairs({"Delete","Move","Resize"}) do pcall(function() local t = Instance.new("HopperBin"); t.BinType = Enum.BinType[n]; t.Parent = Player.Backpack end) end end)
+    reg("clear", {"cls"}, "Clear console", "cls", function() for _, c in ipairs(coScroll:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end; lo = 0 end)
+    reg("help", {"cmds","h"}, "Show commands", "help", function() clog("═══ COMMANDS ═══", NexusConfig.Theme.Accent); local seen = {}; for _, cmd in pairs(Cmds) do if not seen[cmd.N] then seen[cmd.N] = true; clog(";"..cmd.U.." - "..cmd.D, NexusConfig.Theme.TextDim) end end end)
+    reg("players", {"plrs"}, "List players", "plrs", function() for _, p in ipairs(Players:GetPlayers()) do clog(p.Name.." ("..p.DisplayName..")", NexusConfig.Theme.TextDim) end end)
+    
+    local function proc(input) local pf = NexusConfig.CommandPrefix; if input:sub(1,#pf) ~= pf then input = pf..input end; local ct = input:sub(#pf+1); local parts = {}; for w in ct:gmatch("%S+") do table.insert(parts, w) end; if #parts == 0 then return end; local cn = table.remove(parts, 1):lower(); clog("> "..input, NexusConfig.Theme.Accent); local cmd = Cmds[cn]; if cmd then pcall(function() cmd.C(parts) end) else clog("Unknown: "..cn, NexusConfig.Theme.Error) end end
+    ci.FocusLost:Connect(function(e) if e and ci.Text ~= "" then proc(ci.Text); ci.Text = "" end end)
+    Utils.AddConnection("ChatCmds", Player.Chatted:Connect(function(m) if m:sub(1, #NexusConfig.CommandPrefix) == NexusConfig.CommandPrefix then proc(m) end end))
+end
+
+-- SETTINGS
+do
+    UI.CreateSection("Settings", "General")
+    UI.CreateDropdown("Settings", "Toggle Key", {"RightShift","RightControl","Insert","Home","F6"}, function(s) NexusConfig.ToggleKey = Enum.KeyCode[s] end)
+    UI.CreateSpacer("Settings"); UI.CreateSection("Settings", "Theme")
+    UI.CreateDropdown("Settings", "Accent Color", {"Purple","Blue","Red","Green","Orange","Pink","Cyan"}, function(s) local c = {Purple=Color3.fromRGB(100,70,255),Blue=Color3.fromRGB(70,130,255),Red=Color3.fromRGB(255,70,80),Green=Color3.fromRGB(70,255,130),Orange=Color3.fromRGB(255,150,50),Pink=Color3.fromRGB(255,70,180),Cyan=Color3.fromRGB(70,220,255)}; NexusConfig.Theme.Accent = c[s] or NexusConfig.Theme.Accent end)
+    UI.CreateSpacer("Settings"); UI.CreateSection("Settings", "Danger Zone")
+    UI.CreateButton("Settings", "🔥  Reset All", function() Workspace.Gravity = 196.2; Camera.FieldOfView = 70; local h = Utils.GetHumanoid(); if h then h.WalkSpeed = 16; h.JumpPower = 50 end; for n,_ in pairs(NexusState.Connections) do if n ~= "ChatCmds" then Utils.RemoveConnection(n) end end end)
+    UI.CreateButton("Settings", "💣  Destroy GUI", function() for n,_ in pairs(NexusState.Connections) do Utils.RemoveConnection(n) end; Blur:Destroy(); ScreenGui:Destroy() end)
+    UI.CreateSpacer("Settings"); UI.CreateSection("Settings", "Credits")
+    UI.CreateLabel("Settings", "NEXUS ULTRA v3.1 - BY MMNWD", NexusConfig.Theme.Accent)
+    UI.CreateLabel("Settings", "✅ Terms of Use: Accepted"); UI.CreateLabel("Settings", "All features client-side only")
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- CORE LOOPS (ESP, Chams, God, Anti-AFK)
+-- ═══════════════════════════════════════════════════════════════
+task.spawn(function()
+    local ef = Instance.new("Folder"); ef.Name = "NexusESP"; ef.Parent = CoreGui
+    RunService.RenderStepped:Connect(function()
+        if NexusState.ESP then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Head") then
+                    local en = "E_"..p.UserId; local bb = ef:FindFirstChild(en)
+                    if not bb then bb = Instance.new("BillboardGui"); bb.Name = en; bb.Adornee = p.Character.Head; bb.Size = UDim2.new(0,180,0,50); bb.StudsOffset = Vector3.new(0,3,0); bb.AlwaysOnTop = true; bb.Parent = ef
+                        local nl = Instance.new("TextLabel"); nl.Name = "N"; nl.BackgroundColor3 = Color3.new(0,0,0); nl.BackgroundTransparency = 0.5; nl.Size = UDim2.new(1,0,0.5,0); nl.Font = Enum.Font.GothamBold; nl.TextColor3 = NexusConfig.Theme.Accent; nl.TextSize = 12; nl.Parent = bb; Instance.new("UICorner", {CornerRadius = UDim.new(0,4)}).Parent = nl
+                        local hb = Instance.new("Frame"); hb.Name = "H"; hb.BackgroundColor3 = Color3.fromRGB(40,40,40); hb.Size = UDim2.new(0.8,0,0,4); hb.Position = UDim2.new(0.1,0,0.65,0); hb.Parent = bb; Instance.new("UICorner", {CornerRadius = UDim.new(1,0)}).Parent = hb
+                        local hf = Instance.new("Frame"); hf.Name = "F"; hf.BackgroundColor3 = NexusConfig.Theme.Success; hf.Size = UDim2.new(1,0,1,0); hf.Parent = hb; Instance.new("UICorner", {CornerRadius = UDim.new(1,0)}).Parent = hf
+                        local dl = Instance.new("TextLabel"); dl.Name = "D"; dl.BackgroundTransparency = 1; dl.Size = UDim2.new(1,0,0.3,0); dl.Position = UDim2.new(0,0,0.75,0); dl.Font = Enum.Font.Gotham; dl.TextColor3 = NexusConfig.Theme.TextDim; dl.TextSize = 10; dl.Parent = bb
+                    end
+                    bb.Adornee = p.Character.Head; bb:FindFirstChild("N").Text = p.DisplayName
+                    local r = Utils.GetRootPart(); if r then bb:FindFirstChild("D").Text = "["..math.floor((p.Character.HumanoidRootPart.Position-r.Position).Magnitude).." studs]" end
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid"); if hum then local rat = math.clamp(hum.Health/hum.MaxHealth,0,1); bb:FindFirstChild("H"):FindFirstChild("F").Size = UDim2.new(rat,0,1,0); bb:FindFirstChild("H"):FindFirstChild("F").BackgroundColor3 = Color3.fromRGB(255*(1-rat),255*rat,0) end
+                else local e = ef:FindFirstChild("E_"..p.UserId); if e then e:Destroy() end end
+            end
+        else for _, c in ipairs(ef:GetChildren()) do c:Destroy() end end
+        if NexusState.Chams then for _, p in ipairs(Players:GetPlayers()) do if p ~= Player and p.Character and not p.Character:FindFirstChild("NexusHighlight") then local h = Instance.new("Highlight"); h.Name = "NexusHighlight"; h.FillColor = NexusConfig.Theme.Accent; h.FillTransparency = 0.5; h.OutlineColor = Color3.new(1,1,1); h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; h.Parent = p.Character end end end
+        if NexusState.GodMode then local h = Utils.GetHumanoid(); if h then h.MaxHealth = math.huge; h.Health = math.huge end end
+    end)
+end)
+
+-- Anti-AFK
+task.spawn(function() local VU = game:GetService("VirtualUser"); Player.Idled:Connect(function() if NexusState.AntiAFK then pcall(function() VU:CaptureController(); VU:ClickButton2(Vector2.new()) end) end end) end)
+
+-- Keybind
+UserInputService.InputBegan:Connect(function(i, gp) if gp then return end
+    if i.KeyCode == NexusConfig.ToggleKey then NexusState.GuiOpen = not NexusState.GuiOpen
+        if NexusState.GuiOpen then MainFrame.Visible = true; MainFrame.Size = UDim2.new(0,0,0,0); MainFrame.Position = UDim2.new(0.5,0,0.5,0); Utils.Tween(MainFrame, {Size = NexusState.Minimized and UDim2.new(0,750,0,38) or UDim2.new(0,750,0,480), Position = UDim2.new(0.5,-375,0.5,-240)}, 0.35); Utils.Tween(Blur, {Size = NexusState.Minimized and 0 or 6}, 0.3)
+        else Utils.Tween(MainFrame, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5,0,0.5,0)}, 0.3); Utils.Tween(Blur, {Size = 0}, 0.3); task.wait(0.35); MainFrame.Visible = false end
+    end
+end)
+
+-- Respawn handler
+Player.CharacterAdded:Connect(function(c) task.wait(0.5); local h = c:FindFirstChildOfClass("Humanoid")
+    if h then if NexusState.WalkSpeed ~= 16 then h.WalkSpeed = NexusState.WalkSpeed end; if NexusState.JumpPower ~= 50 then h.JumpPower = NexusState.JumpPower; h.UseJumpPower = true end; if NexusState.GodMode then h.MaxHealth = math.huge; h.Health = math.huge end end
+    if NexusState.Noclip then Utils.AddConnection("Noclip", RunService.Stepped:Connect(function() if NexusState.Noclip then for _, p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end end end)) end
+end)
+
+-- Tracers
+task.spawn(function() if not Drawing then return end; local tr = {}
+    RunService.RenderStepped:Connect(function() for u, l in pairs(tr) do l:Remove(); tr[u] = nil end; if not NexusState.Tracers then return end; local vs = Camera.ViewportSize
+        for _, p in ipairs(Players:GetPlayers()) do if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then local sp, on = Camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position); if on then local l = Drawing.new("Line"); l.From = Vector2.new(vs.X/2, vs.Y); l.To = Vector2.new(sp.X, sp.Y); l.Color = NexusConfig.Theme.Accent; l.Thickness = 1.5; l.Transparency = 0.7; l.Visible = true; tr[p.UserId] = l end end end
+    end)
+end)
+
+-- ESP cleanup
+Players.PlayerRemoving:Connect(function(p) pcall(function() local ef = CoreGui:FindFirstChild("NexusESP"); if ef then local o = ef:FindFirstChild("E_"..p.UserId); if o then o:Destroy() end end end) end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- STARTUP ANIMATION
+-- ═══════════════════════════════════════════════════════════════
+MainFrame.Size = UDim2.new(0,0,0,0); MainFrame.Position = UDim2.new(0.5,0,0.5,0)
+task.wait(0.2)
+Utils.Tween(MainFrame, {Size = UDim2.new(0,750,0,480), Position = UDim2.new(0.5,-375,0.5,-240)}, 0.5, Enum.EasingStyle.Back)
+Utils.Tween(Blur, {Size = 6}, 0.5)
+task.wait(0.6)
+
+Utils.Notify("NEXUS ULTRA", "✅ Terms accepted! v3.1 loaded successfully.", "Success", 5)
+Utils.Notify("BY MMNWD", "Press "..NexusConfig.ToggleKey.Name.." to toggle | ;help for commands", "Info", 6)
+
+print("═══════════════════════════════════════")
+print("  ⚡ NEXUS ULTRA v3.1 - BY MMNWD")
+print("  ✅ Terms of Use: ACCEPTED")
+print("  Toggle: " .. NexusConfig.ToggleKey.Name)
+print("  Commands: ;help")
+print("═══════════════════════════════════════")
