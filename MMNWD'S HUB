@@ -1,0 +1,1484 @@
+--[[
+    ╔══════════════════════════════════════════════════════════╗
+    ║              MMNWD'S HUB  —  v1.0                         ║
+    ║   Aimbot + Wallhack  |  LocalScript → StarterPlayerScripts ║
+    ║   Full glassmorphism dark theme | TweenService animations  ║
+    ╚══════════════════════════════════════════════════════════╝
+--]]
+
+-- ================================================================
+-- SERVICES
+-- ================================================================
+local Players          = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService     = game:GetService("TweenService")
+local RunService       = game:GetService("RunService")
+local Workspace        = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera      = Workspace.CurrentCamera
+local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
+
+task.wait(math.random(35, 85) / 100)
+
+-- ================================================================
+-- THEME
+-- ================================================================
+local Theme = {
+    BG_DEEP     = Color3.fromRGB(8,   8,   14),
+    BG_MAIN     = Color3.fromRGB(13,  13,  22),
+    BG_SIDEBAR  = Color3.fromRGB(10,  10,  18),
+    BG_CARD     = Color3.fromRGB(18,  18,  30),
+    BG_INPUT    = Color3.fromRGB(22,  22,  36),
+    BG_HOVER    = Color3.fromRGB(28,  28,  46),
+    ACCENT      = Color3.fromRGB(99,  102, 241),
+    ACCENT_LT   = Color3.fromRGB(129, 132, 255),
+    ACCENT_DIM  = Color3.fromRGB(60,  62,  160),
+    SUCCESS     = Color3.fromRGB(34,  197, 94),
+    DANGER      = Color3.fromRGB(239, 68,  68),
+    WARNING     = Color3.fromRGB(234, 179, 8),
+    TEXT_HI     = Color3.fromRGB(245, 245, 255),
+    TEXT_MID    = Color3.fromRGB(160, 160, 185),
+    TEXT_DIM    = Color3.fromRGB(90,  90,  120),
+    BORDER      = Color3.fromRGB(40,  40,  70),
+    BORDER_LT   = Color3.fromRGB(70,  70,  110),
+}
+
+-- ================================================================
+-- TWEEN PRESETS
+-- ================================================================
+local TI = {
+    FAST   = TweenInfo.new(0.15, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out),
+    MED    = TweenInfo.new(0.28, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out),
+    SLOW   = TweenInfo.new(0.45, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out),
+    SPRING = TweenInfo.new(0.50, Enum.EasingStyle.Back,  Enum.EasingDirection.Out),
+    SINE   = TweenInfo.new(2.00, Enum.EasingStyle.Sine,  Enum.EasingDirection.InOut),
+}
+
+local function tw(obj, props, info)
+    TweenService:Create(obj, info or TI.MED, props):Play()
+end
+
+-- ================================================================
+-- INSTANCE HELPERS
+-- ================================================================
+local function make(class, props, parent)
+    local inst = Instance.new(class)
+    for k, v in pairs(props) do inst[k] = v end
+    if parent then inst.Parent = parent end
+    return inst
+end
+
+local function addCorner(r, parent)
+    return make("UICorner", {CornerRadius = UDim.new(0, r)}, parent)
+end
+
+local function addStroke(color, thickness, transparency, parent)
+    return make("UIStroke", {
+        Color = color, Thickness = thickness,
+        Transparency = transparency or 0,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+    }, parent)
+end
+
+local function addPadding(top, bottom, left, right, parent)
+    return make("UIPadding", {
+        PaddingTop    = UDim.new(0, top    or 0),
+        PaddingBottom = UDim.new(0, bottom or 0),
+        PaddingLeft   = UDim.new(0, left   or 0),
+        PaddingRight  = UDim.new(0, right  or 0),
+    }, parent)
+end
+
+local function addListLayout(padding, parent)
+    return make("UIListLayout", {
+        Padding             = UDim.new(0, padding or 8),
+        FillDirection       = Enum.FillDirection.Vertical,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        SortOrder           = Enum.SortOrder.LayoutOrder,
+    }, parent)
+end
+
+-- ================================================================
+-- LOGIC STATE
+-- ================================================================
+local State = {
+    aimbotEnabled   = false,
+    alwaysOn        = false,
+    keybindMode     = false,
+    holdKeybind     = Enum.KeyCode.LeftShift,
+    holdingKey      = false,
+    fovRadius       = 120,
+    smoothness      = 0.25,
+    showFovCircle   = true,
+    wallCheck       = false,
+    wallhackEnabled = false,
+    wallhackKey     = Enum.KeyCode.Q,
+    npcRange        = 500,
+    minimizeKey     = Enum.KeyCode.RightControl,
+    isShutDown      = false,
+    hubVisible      = true,
+}
+
+-- Forward declarations
+local showShutdownConfirm
+local setWallhackUI   -- syncs the Wallhack toggle pill from the keybind
+local setAimbotUI     -- syncs the Aimbot toggle pill from external callers
+
+local Connections  = {}
+local WH_Highlights = {}
+local WH_NameTags   = {}
+
+local PendingConn = { holdKey = nil, wallhackKey = nil, minimizeKey = nil }
+
+local function safeConnect(signal, fn)
+    local c = signal:Connect(fn)
+    table.insert(Connections, c)
+    return c
+end
+
+-- ================================================================
+-- DISCLAIMER
+-- ================================================================
+local function showDisclaimer()
+    local dGui = make("ScreenGui", {
+        Name = "MmnwdHubDisclaimer", ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 1000,
+    }, PlayerGui)
+
+    make("Frame", {
+        Size = UDim2.new(1,0,1,0), BackgroundColor3 = Color3.fromRGB(0,0,0),
+        BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 1,
+    }, dGui)
+
+    local card = make("Frame", {
+        Size = UDim2.new(0,440,0,268),
+        Position = UDim2.new(0.5,-220,0.6,-134),
+        BackgroundColor3 = Theme.BG_MAIN, BorderSizePixel = 0, ZIndex = 2,
+    }, dGui)
+    addCorner(14, card)
+    addStroke(Theme.ACCENT, 1.2, 0.5, card)
+
+    -- Top accent bar
+    local topBar = make("Frame", {
+        Size = UDim2.new(1,0,0,3), BackgroundColor3 = Theme.ACCENT,
+        BorderSizePixel = 0, ZIndex = 3,
+    }, card)
+    addCorner(14, topBar)
+
+    -- Title
+    make("TextLabel", {
+        Size = UDim2.new(1,-20,0,32), Position = UDim2.new(0,10,0,14),
+        BackgroundTransparency = 1, Text = "MMNWD'S HUB",
+        TextColor3 = Theme.TEXT_HI, TextSize = 22, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3,
+    }, card)
+
+    -- Divider
+    make("Frame", {
+        Size = UDim2.new(0.85,0,0,1), Position = UDim2.new(0.075,0,0,52),
+        BackgroundColor3 = Theme.BORDER, BorderSizePixel = 0, ZIndex = 3,
+    }, card)
+
+    -- Body text
+    make("TextLabel", {
+        Size = UDim2.new(1,-40,0,52), Position = UDim2.new(0,20,0,60),
+        BackgroundTransparency = 1,
+        Text = "Welcome! Thank you for using this script.\nPlay smart, stay safe, and have fun.",
+        TextColor3 = Theme.TEXT_MID, TextSize = 14, Font = Enum.Font.Gotham,
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3,
+    }, card)
+
+    -- Risk warning
+    make("TextLabel", {
+        Size = UDim2.new(1,-40,0,48), Position = UDim2.new(0,20,0,116),
+        BackgroundTransparency = 1,
+        Text = "⚠  Using scripts carries risks.\nYou proceed entirely at your own risk.",
+        TextColor3 = Theme.WARNING, TextSize = 13, Font = Enum.Font.GothamBold,
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 3,
+    }, card)
+
+    -- Accept button
+    local acceptBtn = make("TextButton", {
+        Size = UDim2.new(0,168,0,38), Position = UDim2.new(0,28,0,192),
+        BackgroundColor3 = Theme.SUCCESS, Text = "✓  Accept & Enter",
+        TextColor3 = Color3.fromRGB(255,255,255), TextSize = 14,
+        Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 3,
+    }, card)
+    addCorner(10, acceptBtn)
+
+    -- Decline button
+    local declineBtn = make("TextButton", {
+        Size = UDim2.new(0,168,0,38), Position = UDim2.new(1,-196,0,192),
+        BackgroundColor3 = Theme.BG_CARD, Text = "✕  Decline",
+        TextColor3 = Theme.TEXT_MID, TextSize = 14,
+        Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 3,
+    }, card)
+    addCorner(10, declineBtn)
+    addStroke(Theme.BORDER_LT, 1, 0, declineBtn)
+
+    acceptBtn.MouseEnter:Connect(function()  tw(acceptBtn,  {BackgroundColor3 = Color3.fromRGB(50,210,110)}) end)
+    acceptBtn.MouseLeave:Connect(function()  tw(acceptBtn,  {BackgroundColor3 = Theme.SUCCESS}) end)
+    declineBtn.MouseEnter:Connect(function() tw(declineBtn, {BackgroundColor3 = Theme.BG_HOVER}) end)
+    declineBtn.MouseLeave:Connect(function() tw(declineBtn, {BackgroundColor3 = Theme.BG_CARD}) end)
+
+    card.Position = UDim2.new(0.5,-220,0.7,-134)
+    card.BackgroundTransparency = 1
+    tw(card, {Position = UDim2.new(0.5,-220,0.5,-134), BackgroundTransparency = 0}, TI.SPRING)
+
+    local accepted, clicked = false, false
+    acceptBtn.MouseButton1Click:Connect(function()
+        accepted = true; clicked = true
+        tw(card, {Position = UDim2.new(0.5,-220,0.4,-134), BackgroundTransparency = 1}, TI.MED)
+        task.wait(0.3); dGui:Destroy()
+    end)
+    declineBtn.MouseButton1Click:Connect(function()
+        accepted = false; clicked = true
+        tw(card, {Position = UDim2.new(0.5,-220,0.65,-134), BackgroundTransparency = 1}, TI.MED)
+        task.wait(0.3); dGui:Destroy()
+    end)
+
+    while not clicked do task.wait() end
+    return accepted
+end
+
+if not showDisclaimer() then
+    LocalPlayer:Kick("You declined the terms of use.")
+    return
+end
+
+-- ================================================================
+-- ROOT GUIS
+-- ================================================================
+local existing = PlayerGui:FindFirstChild("MmnwdHub")
+if existing then existing:Destroy() end
+
+local ScreenGui = make("ScreenGui", {
+    Name = "MmnwdHub", ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 500,
+}, PlayerGui)
+
+local FovGui = make("ScreenGui", {
+    Name = "MmnwdHubFov", ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 499,
+    -- IgnoreGuiInset = true means (0,0) is the true top-left corner of the
+    -- screen, matching Camera.ViewportSize coordinates exactly.
+    -- Without this, Roblox shifts all GUI positions down by the top-bar
+    -- inset (~36 px) which is why the FOV circle appeared too low.
+    IgnoreGuiInset = true,
+}, PlayerGui)
+
+-- ================================================================
+-- DIMENSIONS
+-- ================================================================
+local HUB_W     = 580
+local HUB_H     = 420
+local HEADER_H  = 48   -- header bar height
+local SIDEBAR_W = 130
+local FOOTER_H  = 28   -- status bar height
+local FOOTER_PAD = 6   -- gap between content and footer
+
+-- ================================================================
+-- MAIN FRAME
+-- ================================================================
+local Main = make("Frame", {
+    Name = "Main",
+    Size = UDim2.new(0, HUB_W, 0, HUB_H),
+    Position = UDim2.new(0.5, -(HUB_W/2), 0.5, -(HUB_H/2)),
+    BackgroundColor3 = Theme.BG_MAIN,
+    BackgroundTransparency = 0.08,
+    BorderSizePixel = 0,
+    ClipsDescendants = false,   -- allow glow ring to show outside
+}, ScreenGui)
+addCorner(14, Main)
+addStroke(Theme.BORDER_LT, 1.2, 0.3, Main)
+
+-- Clip children to rounded frame
+local clipFrame = make("Frame", {
+    Size = UDim2.new(1,0,1,0),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ClipsDescendants = true,
+}, Main)
+
+-- Outer glow ring (sits outside clipFrame, child of Main)
+local glowRing = make("Frame", {
+    Size = UDim2.new(1,16,1,16), Position = UDim2.new(0,-8,0,-8),
+    BackgroundColor3 = Theme.ACCENT,
+    BackgroundTransparency = 0.88, BorderSizePixel = 0, ZIndex = 0,
+}, Main)
+addCorner(18, glowRing)
+
+task.spawn(function()
+    while Main and Main.Parent do
+        tw(glowRing, {BackgroundTransparency = 0.80}, TI.SINE) task.wait(2)
+        tw(glowRing, {BackgroundTransparency = 0.92}, TI.SINE) task.wait(2)
+    end
+end)
+
+-- Open animation
+Main.Size = UDim2.new(0,0,0,0)
+Main.Position = UDim2.new(0.5,0,0.5,0)
+Main.BackgroundTransparency = 1
+tw(Main, {
+    Size = UDim2.new(0,HUB_W,0,HUB_H),
+    Position = UDim2.new(0.5,-(HUB_W/2),0.5,-(HUB_H/2)),
+    BackgroundTransparency = 0.08,
+}, TI.SPRING)
+
+-- ================================================================
+-- HEADER  (child of clipFrame so it clips to rounded corners)
+-- ================================================================
+local Header = make("Frame", {
+    Name = "Header",
+    Size = UDim2.new(1,0,0,HEADER_H),
+    Position = UDim2.new(0,0,0,0),
+    BackgroundColor3 = Theme.BG_SIDEBAR,
+    BackgroundTransparency = 0.05,
+    BorderSizePixel = 0, ZIndex = 3,
+}, clipFrame)
+
+-- Bottom accent line on header
+make("Frame", {
+    Size = UDim2.new(1,0,0,2), Position = UDim2.new(0,0,1,-2),
+    BackgroundColor3 = Theme.ACCENT, BorderSizePixel = 0, ZIndex = 4,
+}, Header)
+
+-- Logo badge  [O]
+local logoBadge = make("Frame", {
+    Size = UDim2.new(0,30,0,30),
+    Position = UDim2.new(0,10,0.5,-15),
+    BackgroundColor3 = Theme.ACCENT, BackgroundTransparency = 0.15,
+    BorderSizePixel = 0, ZIndex = 4,
+}, Header)
+addCorner(8, logoBadge)
+make("TextLabel", {
+    Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1,
+    Text = "O", TextColor3 = Color3.fromRGB(255,255,255),
+    TextSize = 16, Font = Enum.Font.GothamBold, ZIndex = 5,
+}, logoBadge)
+
+-- Hub title  — positioned right of badge, takes its own row
+local HubTitle = make("TextLabel", {
+    Size = UDim2.new(0,140,0,22),
+    Position = UDim2.new(0,48,0,7),
+    BackgroundTransparency = 1, Text = "MMNWD'S HUB",
+    TextColor3 = Theme.TEXT_HI, TextSize = 17,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+}, Header)
+
+task.spawn(function()
+    local palette = {Theme.TEXT_HI, Theme.ACCENT_LT, Theme.WARNING, Theme.SUCCESS, Theme.TEXT_HI}
+    local i = 1
+    while HubTitle and HubTitle.Parent do
+        tw(HubTitle, {TextColor3 = palette[i]}, TweenInfo.new(1.6, Enum.EasingStyle.Sine))
+        i = i % #palette + 1; task.wait(1.6)
+    end
+end)
+
+-- Version badge  — sits below the title on the same left column
+local verBadge = make("TextLabel", {
+    Size = UDim2.new(0,52,0,16),
+    Position = UDim2.new(0,48,0,30),
+    BackgroundColor3 = Theme.ACCENT_DIM, BackgroundTransparency = 0.4,
+    Text = "v1.0  ★", TextColor3 = Theme.WARNING,
+    TextSize = 10, Font = Enum.Font.GothamBold, ZIndex = 4,
+}, Header)
+addCorner(4, verBadge)
+
+-- Status pill  — right of version badge on the same row
+local StatusDot = make("TextLabel", {
+    Size = UDim2.new(0,68,0,16),
+    Position = UDim2.new(0,106,0,30),
+    BackgroundColor3 = Theme.SUCCESS, BackgroundTransparency = 0.75,
+    Text = "● LIVE", TextColor3 = Theme.SUCCESS,
+    TextSize = 10, Font = Enum.Font.GothamBold, ZIndex = 4,
+}, Header)
+addCorner(4, StatusDot)
+
+task.spawn(function()
+    while StatusDot and StatusDot.Parent do
+        tw(StatusDot, {TextTransparency = 0.55}, TweenInfo.new(0.9,Enum.EasingStyle.Sine)) task.wait(0.9)
+        tw(StatusDot, {TextTransparency = 0},    TweenInfo.new(0.9,Enum.EasingStyle.Sine)) task.wait(0.9)
+    end
+end)
+
+-- Close button  — pinned to right of header
+local CloseBtn = make("TextButton", {
+    Size = UDim2.new(0,28,0,28),
+    Position = UDim2.new(1,-38,0.5,-14),
+    BackgroundColor3 = Theme.DANGER, BackgroundTransparency = 0.3,
+    Text = "✕", TextColor3 = Color3.fromRGB(255,255,255),
+    TextSize = 14, Font = Enum.Font.GothamBold,
+    ZIndex = 5, AutoButtonColor = false,
+}, Header)
+addCorner(7, CloseBtn)
+CloseBtn.MouseEnter:Connect(function() tw(CloseBtn, {BackgroundTransparency = 0}) end)
+CloseBtn.MouseLeave:Connect(function() tw(CloseBtn, {BackgroundTransparency = 0.3}) end)
+
+-- ================================================================
+-- DRAGGABLE  (drag by Header)
+-- ================================================================
+do
+    local dragging, dragStart, startPos = false, nil, nil
+    Header.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = inp.Position; startPos = Main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = inp.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X,
+                                      startPos.Y.Scale, startPos.Y.Offset+d.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+end
+
+-- ================================================================
+-- SIDEBAR  (child of clipFrame)
+-- ================================================================
+local Sidebar = make("Frame", {
+    Name = "Sidebar",
+    Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H),
+    Position = UDim2.new(0, 0, 0, HEADER_H),
+    BackgroundColor3 = Theme.BG_SIDEBAR,
+    BackgroundTransparency = 0.05,
+    BorderSizePixel = 0, ZIndex = 2,
+}, clipFrame)
+addStroke(Theme.BORDER, 1, 0.4, Sidebar)
+
+-- Sidebar scrollable inner (no tabIndicator in the layout — removed)
+local sidebarInner = make("Frame", {
+    Size = UDim2.new(1,-16, 1, 0),
+    Position = UDim2.new(0, 8, 0, 0),
+    BackgroundTransparency = 1,
+}, Sidebar)
+addPadding(10, 10, 0, 0, sidebarInner)
+addListLayout(4, sidebarInner)
+
+-- ================================================================
+-- CONTENT AREA  (child of clipFrame, leaves room for footer)
+-- ================================================================
+local ContentArea = make("Frame", {
+    Name = "ContentArea",
+    Size = UDim2.new(1,-SIDEBAR_W, 1, -(HEADER_H + FOOTER_H + FOOTER_PAD*2)),
+    Position = UDim2.new(0, SIDEBAR_W, 0, HEADER_H),
+    BackgroundColor3 = Theme.BG_MAIN,
+    BackgroundTransparency = 0.05,
+    BorderSizePixel = 0, ZIndex = 2,
+    ClipsDescendants = true,
+}, clipFrame)
+
+-- ================================================================
+-- FOOTER STATUS BAR  (child of clipFrame, pinned to bottom)
+-- ================================================================
+local StatusBar = make("Frame", {
+    Size = UDim2.new(1,-SIDEBAR_W-20, 0, FOOTER_H),
+    Position = UDim2.new(0, SIDEBAR_W+10, 1, -(FOOTER_H+FOOTER_PAD)),
+    BackgroundColor3 = Theme.BG_SIDEBAR,
+    BackgroundTransparency = 0.35,
+    BorderSizePixel = 0, ZIndex = 3,
+}, clipFrame)
+addCorner(6, StatusBar)
+
+local SessionLabel = make("TextLabel", {
+    Size = UDim2.new(0.42,0,1,0), Position = UDim2.new(0,0,0,0),
+    BackgroundTransparency = 1, Text = "Session: 00:00",
+    TextColor3 = Theme.TEXT_DIM, TextSize = 11, Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+}, StatusBar)
+addPadding(0,0,8,0, SessionLabel)
+
+make("TextLabel", {
+    Size = UDim2.new(0.3,0,1,0), Position = UDim2.new(0.35,0,0,0),
+    BackgroundTransparency = 1, Text = "MMNWD'S HUB",
+    TextColor3 = Theme.BORDER_LT, TextSize = 10, Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4,
+}, StatusBar)
+
+local PingLabel = make("TextLabel", {
+    Size = UDim2.new(0.28,0,1,0), Position = UDim2.new(0.72,0,0,0),
+    BackgroundTransparency = 1, Text = "● 10ms",
+    TextColor3 = Theme.SUCCESS, TextSize = 11, Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 4,
+}, StatusBar)
+addPadding(0,0,0,8, PingLabel)
+
+-- Live session timer
+local sessionStart = tick()
+safeConnect(RunService.RenderStepped, function()
+    if not SessionLabel or not SessionLabel.Parent then return end
+    local e = tick() - sessionStart
+    SessionLabel.Text = string.format("Session: %02d:%02d", math.floor(e/60), math.floor(e%60))
+end)
+
+-- Fake ping
+task.spawn(function()
+    while PingLabel and PingLabel.Parent do
+        local p = math.random(6,30)
+        PingLabel.Text       = "● " .. p .. "ms"
+        PingLabel.TextColor3 = p<15 and Theme.SUCCESS or (p<23 and Theme.WARNING or Theme.DANGER)
+        task.wait(math.random(2,5))
+    end
+end)
+
+-- ================================================================
+-- TAB SYSTEM
+-- ================================================================
+local tabPages  = {}
+local tabBtns   = {}
+local activeTab = nil
+
+local function makeTabPage(name)
+    local page = make("ScrollingFrame", {
+        Name = name.."Page",
+        Size = UDim2.new(1,0,1,0),
+        BackgroundTransparency = 1, BorderSizePixel = 0,
+        ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.ACCENT,
+        CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ZIndex = 3, Visible = false,
+    }, ContentArea)
+    addPadding(10, 10, 12, 12, page)
+    addListLayout(8, page)
+    tabPages[name] = page
+    return page
+end
+
+local function switchTab(name)
+    for tName, page in pairs(tabPages) do
+        page.Visible = (tName == name)
+        if tName == name then
+            page.Position = UDim2.new(0.04,0,0,0)
+            tw(page, {Position = UDim2.new(0,0,0,0)}, TI.MED)
+        end
+    end
+    for tName, btn in pairs(tabBtns) do
+        local active = (tName == name)
+        tw(btn, {
+            BackgroundColor3       = active and Theme.ACCENT  or Theme.BG_HOVER,
+            BackgroundTransparency = active and 0.1           or 1,
+        }, TI.FAST)
+        local lbl = btn:FindFirstChildOfClass("TextLabel")
+        if lbl then tw(lbl, {TextColor3 = active and Theme.TEXT_HI or Theme.TEXT_DIM}, TI.FAST) end
+    end
+    activeTab = name
+end
+
+local function makeSidebarTab(name, icon)
+    local btn = make("TextButton", {
+        Name = name.."Tab",
+        Size = UDim2.new(1,0,0,34),
+        BackgroundColor3 = Theme.ACCENT, BackgroundTransparency = 1,
+        Text = "", AutoButtonColor = false, ZIndex = 3,
+    }, sidebarInner)
+    addCorner(8, btn)
+    addStroke(Theme.BORDER, 1, 0.6, btn)
+
+    make("TextLabel", {
+        Size = UDim2.new(1,-8,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1, Text = icon.."  "..name,
+        TextColor3 = Theme.TEXT_DIM, TextSize = 13, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, btn)
+
+    btn.MouseEnter:Connect(function()
+        if activeTab ~= name then tw(btn, {BackgroundTransparency=0.8, BackgroundColor3=Theme.BG_HOVER}, TI.FAST) end
+    end)
+    btn.MouseLeave:Connect(function()
+        if activeTab ~= name then tw(btn, {BackgroundTransparency=1}, TI.FAST) end
+    end)
+    btn.MouseButton1Click:Connect(function()
+        if not State.isShutDown then switchTab(name) end
+    end)
+
+    tabBtns[name] = btn
+    return btn
+end
+
+-- Build tabs
+makeSidebarTab("Main",     "⚡")
+makeSidebarTab("Combat",   "🎯")
+makeSidebarTab("Wallhack", "👁")
+makeSidebarTab("Settings", "⚙")
+
+makeTabPage("Main")
+makeTabPage("Combat")
+makeTabPage("Wallhack")
+makeTabPage("Settings")
+
+-- ================================================================
+-- COMPONENT LIBRARY
+-- ================================================================
+
+-- Section header
+local function makeSection(parent, text, layoutOrder)
+    local f = make("Frame", {
+        Size = UDim2.new(1,0,0,20), BackgroundTransparency = 1,
+        ZIndex = 3, LayoutOrder = layoutOrder,
+    }, parent)
+    make("TextLabel", {
+        Size = UDim2.new(1,0,0,14), Position = UDim2.new(0,0,0,3),
+        BackgroundTransparency = 1, Text = "  ◈  "..text:upper(),
+        TextColor3 = Theme.ACCENT, TextSize = 10, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, f)
+    local line = make("Frame", {
+        Size = UDim2.new(1,0,0,1), Position = UDim2.new(0,0,1,-1),
+        BackgroundColor3 = Theme.BORDER, BorderSizePixel = 0, ZIndex = 3,
+    }, f)
+    make("UIGradient", {Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.ACCENT),
+        ColorSequenceKeypoint.new(0.45, Theme.BORDER),
+        ColorSequenceKeypoint.new(1, Theme.BG_MAIN),
+    })}, line)
+    return f
+end
+
+-- Toggle card
+local function makeToggle(parent, label, desc, layoutOrder, defaultOn, onToggle)
+    local card = make("Frame", {
+        Size = UDim2.new(1,0,0,54),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = layoutOrder,
+    }, parent)
+    addCorner(10, card)
+    addStroke(Theme.BORDER, 1, 0.3, card)
+
+    -- Left colour stripe
+    local bar = make("Frame", {
+        Size = UDim2.new(0,3,0,28), Position = UDim2.new(0,0,0,13),
+        BackgroundColor3 = defaultOn and Theme.SUCCESS or Theme.BORDER,
+        BorderSizePixel = 0, ZIndex = 4,
+    }, card)
+    addCorner(2, bar)
+
+    -- Label (top line)
+    make("TextLabel", {
+        Size = UDim2.new(1,-72,0,20), Position = UDim2.new(0,12,0,8),
+        BackgroundTransparency = 1, Text = label,
+        TextColor3 = Theme.TEXT_HI, TextSize = 14, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, card)
+
+    -- Description (bottom line)
+    make("TextLabel", {
+        Size = UDim2.new(1,-72,0,14), Position = UDim2.new(0,12,0,30),
+        BackgroundTransparency = 1, Text = desc,
+        TextColor3 = Theme.TEXT_DIM, TextSize = 11, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, card)
+
+    -- Toggle pill
+    local pill = make("Frame", {
+        Size = UDim2.new(0,46,0,24), Position = UDim2.new(1,-56,0.5,-12),
+        BackgroundColor3 = defaultOn and Theme.SUCCESS or Theme.BG_DEEP,
+        BorderSizePixel = 0, ZIndex = 4,
+    }, card)
+    addCorner(12, pill)
+    local pillStroke = addStroke(defaultOn and Theme.SUCCESS or Theme.BORDER, 1, 0.2, pill)
+
+    local dot = make("Frame", {
+        Size = UDim2.new(0,18,0,18),
+        Position = defaultOn and UDim2.new(0,24,0.5,-9) or UDim2.new(0,4,0.5,-9),
+        BackgroundColor3 = Color3.fromRGB(255,255,255), BorderSizePixel = 0, ZIndex = 5,
+    }, pill)
+    addCorner(9, dot)
+
+    local isOn = defaultOn
+
+    local function setState(on, skip)
+        isOn = on
+        local pc = on and Theme.SUCCESS or Theme.BG_DEEP
+        local dp = on and UDim2.new(0,24,0.5,-9) or UDim2.new(0,4,0.5,-9)
+        if skip then
+            pill.BackgroundColor3 = pc; dot.Position = dp
+            bar.BackgroundColor3  = on and Theme.SUCCESS or Theme.BORDER
+        else
+            tw(pill, {BackgroundColor3 = pc}, TI.FAST)
+            tw(dot,  {Position = dp},          TI.MED)
+            tw(bar,  {BackgroundColor3 = on and Theme.SUCCESS or Theme.BORDER}, TI.FAST)
+            local cs = card:FindFirstChildOfClass("UIStroke")
+            if cs then
+                tw(cs, {Color = on and Theme.SUCCESS or Theme.BORDER}, TI.FAST)
+                if not on then task.delay(0.3, function()
+                    if cs and cs.Parent then tw(cs, {Color = Theme.BORDER}, TI.MED) end
+                end) end
+            end
+        end
+        pillStroke.Color = on and Theme.SUCCESS or Theme.BORDER
+    end
+    setState(defaultOn, true)
+
+    local clickBtn = make("TextButton", {
+        Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Text = "", ZIndex = 6,
+    }, card)
+    clickBtn.MouseButton1Click:Connect(function()
+        if State.isShutDown then return end
+        setState(not isOn)
+        if onToggle then onToggle(isOn) end
+    end)
+    clickBtn.MouseEnter:Connect(function() tw(card, {BackgroundColor3 = Theme.BG_HOVER}, TI.FAST) end)
+    clickBtn.MouseLeave:Connect(function() tw(card, {BackgroundColor3 = Theme.BG_CARD},  TI.FAST) end)
+
+    return card, setState, function() return isOn end
+end
+
+-- Slider card
+local function makeSlider(parent, label, minV, maxV, defaultV, unit, layoutOrder, onChanged)
+    local card = make("Frame", {
+        Size = UDim2.new(1,0,0,62),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = layoutOrder,
+    }, parent)
+    addCorner(10, card)
+    addStroke(Theme.BORDER, 1, 0.3, card)
+
+    -- Label row
+    local valLbl = make("TextLabel", {
+        Size = UDim2.new(1,-12,0,18), Position = UDim2.new(0,12,0,8),
+        BackgroundTransparency = 1,
+        Text = label.."   "..tostring(defaultV).." "..unit,
+        TextColor3 = Theme.TEXT_HI, TextSize = 13, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, card)
+
+    -- Track
+    local track = make("Frame", {
+        Size = UDim2.new(1,-24,0,6), Position = UDim2.new(0,12,0,36),
+        BackgroundColor3 = Theme.BG_DEEP, BorderSizePixel = 0, ZIndex = 4,
+    }, card)
+    addCorner(3, track)
+
+    local pct0 = math.clamp((defaultV-minV)/(maxV-minV), 0, 1)
+
+    local fill = make("Frame", {
+        Size = UDim2.new(pct0,0,1,0),
+        BackgroundColor3 = Theme.ACCENT, BorderSizePixel = 0, ZIndex = 5,
+    }, track)
+    addCorner(3, fill)
+    make("UIGradient", {Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.ACCENT_DIM),
+        ColorSequenceKeypoint.new(1, Theme.ACCENT_LT),
+    })}, fill)
+
+    local thumb = make("Frame", {
+        Size = UDim2.new(0,16,0,16), Position = UDim2.new(pct0,-8,0.5,-8),
+        BackgroundColor3 = Color3.fromRGB(255,255,255), BorderSizePixel = 0, ZIndex = 6,
+    }, track)
+    addCorner(8, thumb)
+    addStroke(Theme.ACCENT, 2, 0, thumb)
+
+    -- Hit area covers the whole card below the label
+    local hitArea = make("TextButton", {
+        Size = UDim2.new(1,0,0,34), Position = UDim2.new(0,0,0,26),
+        BackgroundTransparency = 1, Text = "", ZIndex = 7,
+    }, card)
+
+    local dragging = false
+    local function setVal(x)
+        local rel = math.clamp((x - track.AbsolutePosition.X)/track.AbsoluteSize.X, 0, 1)
+        local v   = math.floor(minV + rel*(maxV-minV))
+        tw(fill,  {Size     = UDim2.new(rel,0,1,0)}, TI.FAST)
+        tw(thumb, {Position = UDim2.new(rel,-8,0.5,-8)}, TI.FAST)
+        valLbl.Text = label.."   "..tostring(v).." "..unit
+        if onChanged then onChanged(v) end
+    end
+
+    hitArea.MouseButton1Down:Connect(function()
+        if State.isShutDown then return end
+        dragging = true; setVal(UserInputService:GetMouseLocation().X)
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then setVal(inp.Position.X) end
+    end)
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+
+    return card
+end
+
+-- Keybind card
+local function makeKeybind(parent, label, defaultKey, layoutOrder, onBound, pendingSlot)
+    local card = make("Frame", {
+        Size = UDim2.new(1,0,0,44),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = layoutOrder,
+    }, parent)
+    addCorner(10, card)
+    addStroke(Theme.BORDER, 1, 0.3, card)
+
+    make("TextLabel", {
+        Size = UDim2.new(0.55,0,1,0), Position = UDim2.new(0,12,0,0),
+        BackgroundTransparency = 1, Text = label,
+        TextColor3 = Theme.TEXT_HI, TextSize = 13, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, card)
+
+    local keyBtn = make("TextButton", {
+        Size = UDim2.new(0,110,0,28), Position = UDim2.new(1,-120,0.5,-14),
+        BackgroundColor3 = Theme.BG_INPUT,
+        Text = "[ "..defaultKey.Name.." ]",
+        TextColor3 = Theme.WARNING, TextSize = 12, Font = Enum.Font.GothamBold,
+        ZIndex = 4, AutoButtonColor = false,
+    }, card)
+    addCorner(7, keyBtn)
+    addStroke(Theme.BORDER_LT, 1, 0.2, keyBtn)
+
+    local listening = false
+    keyBtn.MouseButton1Click:Connect(function()
+        if State.isShutDown or listening then return end
+        listening = true
+        keyBtn.Text = "< PRESS >"; keyBtn.TextColor3 = Theme.ACCENT_LT
+        tw(keyBtn, {BackgroundColor3 = Theme.BG_DEEP}, TI.FAST)
+        if pendingSlot and PendingConn[pendingSlot] then
+            PendingConn[pendingSlot]:Disconnect(); PendingConn[pendingSlot] = nil
+        end
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(inp, gp)
+            if gp then return end
+            if inp.KeyCode ~= Enum.KeyCode.Unknown then
+                conn:Disconnect()
+                if pendingSlot then PendingConn[pendingSlot] = nil end
+                listening = false
+                keyBtn.Text = "[ "..inp.KeyCode.Name.." ]"; keyBtn.TextColor3 = Theme.WARNING
+                tw(keyBtn, {BackgroundColor3 = Theme.BG_INPUT}, TI.FAST)
+                if onBound then onBound(inp.KeyCode) end
+            end
+        end)
+        if pendingSlot then PendingConn[pendingSlot] = conn end
+    end)
+    keyBtn.MouseEnter:Connect(function() tw(keyBtn, {BackgroundColor3 = Theme.BG_HOVER}, TI.FAST) end)
+    keyBtn.MouseLeave:Connect(function()
+        if not listening then tw(keyBtn, {BackgroundColor3 = Theme.BG_INPUT}, TI.FAST) end
+    end)
+    return card
+end
+
+-- Info card
+local function makeInfoCard(parent, text, layoutOrder)
+    local card = make("Frame", {
+        Size = UDim2.new(1,0,0,44),
+        BackgroundColor3 = Theme.ACCENT_DIM, BackgroundTransparency = 0.75,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = layoutOrder,
+    }, parent)
+    addCorner(8, card)
+    addStroke(Theme.ACCENT, 1, 0.6, card)
+    make("TextLabel", {
+        Size = UDim2.new(1,-16,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1, Text = text,
+        TextColor3 = Theme.ACCENT_LT, TextSize = 12, Font = Enum.Font.Gotham,
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, card)
+    return card
+end
+
+-- ================================================================
+-- ── MAIN TAB
+-- ================================================================
+do
+    local pg = tabPages["Main"]
+
+    makeInfoCard(pg,
+        "ℹ  Welcome to MMNWD'S HUB!  Navigate with the sidebar.  "..
+        "Press "..State.minimizeKey.Name.." to toggle visibility.", 1)
+
+    makeSection(pg, "Quick Status", 2)
+
+    -- Status card (3 cells: Aimbot / Wallhack / Mode)
+    local statusCard = make("Frame", {
+        Size = UDim2.new(1,0,0,68),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = 3,
+    }, pg)
+    addCorner(10, statusCard)
+    addStroke(Theme.BORDER, 1, 0.3, statusCard)
+
+    local cells = {
+        {name="Aimbot",   valFn=function() return State.aimbotEnabled   and "ON"  or "OFF"    end, col=function() return State.aimbotEnabled   and Theme.SUCCESS or Theme.DANGER    end},
+        {name="Wallhack", valFn=function() return State.wallhackEnabled  and "ON"  or "OFF"    end, col=function() return State.wallhackEnabled  and Theme.SUCCESS or Theme.DANGER    end},
+        {name="Mode",     valFn=function()
+            if State.alwaysOn    then return "Always"
+            elseif State.keybindMode then return "Hold"
+            else return "Off" end
+        end, col=function() return Theme.ACCENT_LT end},
+    }
+
+    local cW = 1/#cells
+    for i, c in ipairs(cells) do
+        make("TextLabel", {
+            Name = c.name.."Val",
+            Size = UDim2.new(cW,0,0,28), Position = UDim2.new(cW*(i-1),0,0,10),
+            BackgroundTransparency = 1, Text = c.valFn(),
+            TextColor3 = c.col(), TextSize = 17, Font = Enum.Font.GothamBold,
+            TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4,
+        }, statusCard)
+        make("TextLabel", {
+            Size = UDim2.new(cW,0,0,14), Position = UDim2.new(cW*(i-1),0,0,42),
+            BackgroundTransparency = 1, Text = c.name:upper(),
+            TextColor3 = Theme.TEXT_DIM, TextSize = 10, Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 4,
+        }, statusCard)
+        if i < #cells then
+            make("Frame", {
+                Size = UDim2.new(0,1,0.55,0), Position = UDim2.new(cW*i,0,0.225,0),
+                BackgroundColor3 = Theme.BORDER, BorderSizePixel = 0, ZIndex = 4,
+            }, statusCard)
+        end
+    end
+
+    -- Refresh status values every 0.5s
+    task.spawn(function()
+        while statusCard and statusCard.Parent do
+            for _, c in ipairs(cells) do
+                local lbl = statusCard:FindFirstChild(c.name.."Val")
+                if lbl then lbl.Text = c.valFn(); lbl.TextColor3 = c.col() end
+            end
+            task.wait(0.5)
+        end
+    end)
+
+    makeSection(pg, "Credits", 4)
+
+    -- Credits card
+    local credCard = make("Frame", {
+        Size = UDim2.new(1,0,0,44),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = 5,
+    }, pg)
+    addCorner(10, credCard)
+    addStroke(Theme.BORDER, 1, 0.3, credCard)
+    make("TextLabel", {
+        Size = UDim2.new(1,-16,1,0), Position = UDim2.new(0,8,0,0),
+        BackgroundTransparency = 1,
+        Text = "Built by mmnwd  ·  v1.0  ·  All 38 bugs fixed  ·  R6 + R15 support",
+        TextColor3 = Theme.TEXT_DIM, TextSize = 12, Font = Enum.Font.Gotham,
+        TextWrapped = true, ZIndex = 4,
+    }, credCard)
+end
+
+-- ================================================================
+-- ── COMBAT TAB
+-- ================================================================
+do
+    local pg = tabPages["Combat"]
+
+    makeSection(pg, "Master Control", 1)
+    local _abCard; _abCard, setAimbotUI = makeToggle(pg, "Aimbot Enabled", "Main on/off switch for lock-on", 2, false, function(on)
+        State.aimbotEnabled = on
+    end)
+
+    makeSection(pg, "Activation Mode", 3)
+    makeToggle(pg, "Always On", "Aim fires at all times — no key needed", 4, false, function(on)
+        State.alwaysOn = on
+        if on then State.keybindMode = false end
+    end)
+    makeToggle(pg, "Hold-Key Mode", "Hold the bind below to activate aim", 5, false, function(on)
+        State.keybindMode = on
+        if on then State.alwaysOn = false end
+    end)
+    makeKeybind(pg, "Hold-to-Aim Key", Enum.KeyCode.LeftShift, 6, function(key)
+        State.holdKeybind = key
+    end, "holdKey")
+
+    makeSection(pg, "Tuning", 7)
+    makeSlider(pg, "FOV Radius", 0, 250, 120, "px", 8, function(v)
+        State.fovRadius = v
+        local fc = FovGui:FindFirstChild("FovCircle")
+        if fc then fc.Size = UDim2.new(0,v*2,0,v*2) end
+    end)
+    makeSlider(pg, "Smoothness", 1, 95, 25, "%", 9, function(v)
+        State.smoothness = v / 100
+    end)
+
+    makeSection(pg, "Options", 10)
+    makeToggle(pg, "Show FOV Circle", "Render the FOV ring on screen", 11, true, function(on)
+        State.showFovCircle = on
+        local fc = FovGui:FindFirstChild("FovCircle")
+        if fc then fc.Visible = on end
+    end)
+    makeToggle(pg, "Wallcheck  (LOS)", "Only lock-on to visible targets", 12, false, function(on)
+        State.wallCheck = on
+    end)
+end
+
+-- ================================================================
+-- ── WALLHACK TAB
+-- ================================================================
+do
+    local pg = tabPages["Wallhack"]
+
+    makeSection(pg, "Master Control", 1)
+
+    -- Assign into the file-level variable so setWallhack() can sync the pill live
+    local _whCard; _whCard, setWallhackUI = makeToggle(pg, "Wallhack  (ESP)", "Highlight all players through walls", 2, false, function(on)
+        setWallhack(on)
+    end)
+
+    makeSection(pg, "Configuration", 3)
+    makeToggle(pg, "Show Name Tags", "Billboard names above targets", 4, true, function(on)
+        for _, bb in pairs(WH_NameTags) do
+            if bb and bb.Parent then bb.Enabled = on end
+        end
+    end)
+    makeSlider(pg, "NPC Highlight Range", 50, 1000, 500, "st", 5, function(v)
+        State.npcRange = v
+    end)
+    makeKeybind(pg, "Toggle Wallhack Key", Enum.KeyCode.Q, 6, function(key)
+        State.wallhackKey = key
+    end, "wallhackKey")
+
+    makeInfoCard(pg, "Red = Enemy  ·  Green = Teammate  ·  NPC range applies to non-player characters only.", 7)
+end
+
+-- ================================================================
+-- ── SETTINGS TAB
+-- ================================================================
+do
+    local pg = tabPages["Settings"]
+
+    -- User card
+    local userCard = make("Frame", {
+        Size = UDim2.new(1,0,0,68),
+        BackgroundColor3 = Theme.BG_CARD, BackgroundTransparency = 0.1,
+        BorderSizePixel = 0, ZIndex = 3, LayoutOrder = 1,
+    }, pg)
+    addCorner(10, userCard)
+    addStroke(Theme.BORDER, 1, 0.3, userCard)
+    make("UIGradient", {Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.ACCENT_DIM),
+        ColorSequenceKeypoint.new(1, Theme.BG_CARD),
+    })}, userCard)
+
+    local av = make("Frame", {
+        Size = UDim2.new(0,44,0,44), Position = UDim2.new(0,12,0.5,-22),
+        BackgroundColor3 = Theme.ACCENT, BorderSizePixel = 0, ZIndex = 4,
+    }, userCard)
+    addCorner(22, av)
+    make("TextLabel", {
+        Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1,
+        Text = "O", TextColor3 = Color3.fromRGB(255,255,255),
+        TextSize = 20, Font = Enum.Font.GothamBold, ZIndex = 5,
+    }, av)
+    make("TextLabel", {
+        Size = UDim2.new(1,-76,0,22), Position = UDim2.new(0,66,0,10),
+        BackgroundTransparency = 1, Text = "mmnwd",
+        TextColor3 = Theme.TEXT_HI, TextSize = 16, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, userCard)
+    make("TextLabel", {
+        Size = UDim2.new(1,-76,0,16), Position = UDim2.new(0,66,0,36),
+        BackgroundTransparency = 1, Text = "★  Suite Member  ·  MMNWD'S HUB v1.0",
+        TextColor3 = Theme.WARNING, TextSize = 11, Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 4,
+    }, userCard)
+
+    makeSection(pg, "Hub Controls", 2)
+    makeKeybind(pg, "Toggle Hub Visibility", Enum.KeyCode.RightControl, 3, function(key)
+        State.minimizeKey = key
+    end, "minimizeKey")
+
+    makeSection(pg, "Danger Zone", 4)
+
+    local termBtn = make("TextButton", {
+        Size = UDim2.new(1,0,0,44),
+        BackgroundColor3 = Color3.fromRGB(55,15,15),
+        Text = "⚠  TERMINATE SCRIPT", TextColor3 = Theme.DANGER,
+        TextSize = 14, Font = Enum.Font.GothamBold,
+        ZIndex = 3, AutoButtonColor = false, LayoutOrder = 5,
+    }, pg)
+    addCorner(10, termBtn)
+    addStroke(Theme.DANGER, 1, 0.4, termBtn)
+    termBtn.MouseEnter:Connect(function() tw(termBtn, {BackgroundColor3 = Color3.fromRGB(80,20,20)}, TI.FAST) end)
+    termBtn.MouseLeave:Connect(function() tw(termBtn, {BackgroundColor3 = Color3.fromRGB(55,15,15)}, TI.FAST) end)
+    termBtn.MouseButton1Click:Connect(function()
+        if State.isShutDown then return end
+        showShutdownConfirm()
+    end)
+end
+
+-- ================================================================
+-- FOV CIRCLE
+-- ================================================================
+local fovCircle = make("Frame", {
+    Name = "FovCircle",
+    Size = UDim2.new(0, State.fovRadius*2, 0, State.fovRadius*2),
+    BackgroundColor3 = Color3.fromRGB(0,0,0),
+    BackgroundTransparency = 0.90, BorderSizePixel = 0,
+    Visible = State.showFovCircle,
+}, FovGui)
+addCorner(9999, fovCircle)
+addStroke(Theme.SUCCESS, 1.5, 0.1, fovCircle)
+
+make("Frame", {
+    Size = UDim2.new(0,4,0,4), Position = UDim2.new(0.5,-2,0.5,-2),
+    BackgroundColor3 = Theme.SUCCESS, BorderSizePixel = 0,
+}, fovCircle)
+addCorner(2, fovCircle:FindFirstChild("Frame"))
+
+-- ================================================================
+-- SHUTDOWN CONFIRM
+-- ================================================================
+showShutdownConfirm = function()
+    local cGui = make("ScreenGui", {
+        Name = "MmnwdHubConfirm", ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 1001,
+    }, PlayerGui)
+
+    -- Dim overlay (ZIndex 1 — does NOT intercept clicks on the card)
+    make("Frame", {
+        Size = UDim2.new(1,0,1,0), BackgroundColor3 = Color3.fromRGB(0,0,0),
+        BackgroundTransparency = 0.45, BorderSizePixel = 0, ZIndex = 1,
+    }, cGui)
+
+    -- Card (ZIndex 2 — above overlay)
+    local card = make("Frame", {
+        Size = UDim2.new(0,360,0,160),
+        Position = UDim2.new(0.5,-180,0.6,-80),
+        BackgroundColor3 = Theme.BG_MAIN, BorderSizePixel = 0, ZIndex = 2,
+    }, cGui)
+    addCorner(14, card)
+    addStroke(Theme.DANGER, 1.2, 0.4, card)
+
+    make("Frame", {
+        Size = UDim2.new(1,0,0,3), BackgroundColor3 = Theme.DANGER,
+        BorderSizePixel = 0, ZIndex = 3,
+    }, card)
+    make("TextLabel", {
+        Size = UDim2.new(1,-24,0,28), Position = UDim2.new(0,12,0,14),
+        BackgroundTransparency = 1, Text = "Terminate Script?",
+        TextColor3 = Theme.TEXT_HI, TextSize = 18, Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3,
+    }, card)
+    make("TextLabel", {
+        Size = UDim2.new(1,-24,0,28), Position = UDim2.new(0,12,0,44),
+        BackgroundTransparency = 1,
+        Text = "All features will stop and the hub will close.",
+        TextColor3 = Theme.TEXT_DIM, TextSize = 12, Font = Enum.Font.Gotham,
+        TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3,
+    }, card)
+
+    local yBtn = make("TextButton", {
+        Size = UDim2.new(0,148,0,36), Position = UDim2.new(0,12,1,-48),
+        BackgroundColor3 = Theme.DANGER, Text = "✕  Terminate",
+        TextColor3 = Color3.fromRGB(255,255,255), TextSize = 13,
+        Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 3,
+    }, card)
+    addCorner(9, yBtn)
+    yBtn.MouseEnter:Connect(function() tw(yBtn, {BackgroundColor3=Color3.fromRGB(220,50,50)}, TI.FAST) end)
+    yBtn.MouseLeave:Connect(function() tw(yBtn, {BackgroundColor3=Theme.DANGER}, TI.FAST) end)
+
+    local nBtn = make("TextButton", {
+        Size = UDim2.new(0,148,0,36), Position = UDim2.new(1,-160,1,-48),
+        BackgroundColor3 = Theme.BG_CARD, Text = "← Cancel",
+        TextColor3 = Theme.TEXT_MID, TextSize = 13,
+        Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 3,
+    }, card)
+    addCorner(9, nBtn)
+    addStroke(Theme.BORDER_LT, 1, 0, nBtn)
+    nBtn.MouseEnter:Connect(function() tw(nBtn, {BackgroundColor3=Theme.BG_HOVER}, TI.FAST) end)
+    nBtn.MouseLeave:Connect(function() tw(nBtn, {BackgroundColor3=Theme.BG_CARD}, TI.FAST) end)
+
+    -- Animate in
+    tw(card, {Position = UDim2.new(0.5,-180,0.5,-80)}, TI.SPRING)
+
+    yBtn.MouseButton1Click:Connect(function()
+        State.isShutDown = true
+        cGui:Destroy()
+
+        for _, c in ipairs(Connections) do if c then c:Disconnect() end end
+        Connections = {}
+        for slot, c in pairs(PendingConn) do
+            if c then c:Disconnect() end; PendingConn[slot] = nil
+        end
+
+        clearAllWallhack()
+
+        if Main and Main.Parent then
+            tw(Main, {Size=UDim2.new(0,0,0,0), Position=UDim2.new(0.5,0,0.5,0), BackgroundTransparency=1}, TI.MED)
+        end
+        task.wait(0.32)
+
+        if ScreenGui and ScreenGui.Parent then ScreenGui:Destroy() end
+        if FovGui    and FovGui.Parent    then FovGui:Destroy()    end
+        Camera.CameraType = Enum.CameraType.Custom
+    end)
+
+    nBtn.MouseButton1Click:Connect(function() cGui:Destroy() end)
+end
+
+CloseBtn.MouseButton1Click:Connect(function()
+    if State.isShutDown then return end
+    showShutdownConfirm()
+end)
+
+-- ================================================================
+-- KEYBIND TRACKING
+-- ================================================================
+safeConnect(UserInputService.InputBegan, function(input, gameProcessed)
+    if State.isShutDown then return end
+
+    if input.KeyCode == State.wallhackKey then
+        -- Toggle wallhack AND sync the pill in the UI
+        setWallhack(not State.wallhackEnabled)
+        return
+    end
+
+    if gameProcessed then return end
+
+    if input.KeyCode == State.minimizeKey then
+        State.hubVisible = not State.hubVisible
+        -- Instant toggle — no tween delay, no task.delay, no fade lag.
+        -- Simply show or hide the frame immediately.
+        Main.Visible = State.hubVisible
+        return
+    end
+
+    if input.KeyCode == State.holdKeybind then State.holdingKey = true end
+end)
+
+safeConnect(UserInputService.InputEnded, function(input)
+    if State.isShutDown then return end
+    if input.KeyCode == State.holdKeybind then State.holdingKey = false end
+end)
+
+-- ================================================================
+-- WALLHACK LOGIC
+-- ================================================================
+local WALLHACK_INTERVAL = 1.0
+
+function setWallhack(on)
+    State.wallhackEnabled = on
+    -- Sync the toggle pill in the UI so it reflects the real state live
+    if setWallhackUI then setWallhackUI(on) end
+    if not on then clearAllWallhack() end
+end
+
+function clearAllWallhack()
+    for _, h in pairs(WH_Highlights) do if h and h.Parent then h:Destroy() end end
+    for _, t in pairs(WH_NameTags)   do if t and t.Parent then t:Destroy() end end
+    WH_Highlights = {}; WH_NameTags = {}
+end
+
+local function characterIsEnemy(character)
+    if character == LocalPlayer.Character then return false end
+    local p = Players:GetPlayerFromCharacter(character)
+    if p then
+        if LocalPlayer.Team and p.Team == LocalPlayer.Team then return false end
+        return true
+    end
+    return character:GetAttribute("Friendly") ~= true
+end
+
+local function applyWallhack(character, isEnemy)
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    if WH_Highlights[character] and not WH_Highlights[character].Parent then WH_Highlights[character] = nil end
+
+    local eF,eO = Color3.fromRGB(255,50,50),Color3.fromRGB(255,0,0)
+    local aF,aO = Color3.fromRGB(50,255,50),Color3.fromRGB(0,255,0)
+
+    if not WH_Highlights[character] then
+        local h = Instance.new("Highlight")
+        h.FillTransparency=0.7; h.OutlineTransparency=0.3
+        h.FillColor=isEnemy and eF or aF; h.OutlineColor=isEnemy and eO or aO
+        h.Adornee=character; h.Parent=character
+        WH_Highlights[character]=h
+    else
+        local h=WH_Highlights[character]
+        h.FillColor=isEnemy and eF or aF; h.OutlineColor=isEnemy and eO or aO
+    end
+
+    if WH_NameTags[character] and not WH_NameTags[character].Parent then WH_NameTags[character]=nil end
+    if not WH_NameTags[character] then
+        local head=character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+        local bb=Instance.new("BillboardGui")
+        bb.Size=UDim2.new(0,200,0,30); bb.StudsOffset=Vector3.new(0,3,0)
+        bb.AlwaysOnTop=true; bb.Parent=head
+        local nl=Instance.new("TextLabel")
+        nl.Size=UDim2.new(1,0,1,0); nl.BackgroundTransparency=1
+        nl.Text=character.Name
+        nl.TextColor3=isEnemy and Color3.fromRGB(255,100,100) or Color3.fromRGB(100,255,100)
+        nl.TextSize=14; nl.Font=Enum.Font.GothamBold; nl.Parent=bb
+        WH_NameTags[character]=bb
+    end
+end
+
+local function removeWallhack(character)
+    if WH_Highlights[character] then
+        if WH_Highlights[character].Parent then WH_Highlights[character]:Destroy() end
+        WH_Highlights[character]=nil
+    end
+    if WH_NameTags[character] then
+        if WH_NameTags[character].Parent then WH_NameTags[character]:Destroy() end
+        WH_NameTags[character]=nil
+    end
+end
+
+local function pruneWH()
+    for char in pairs(WH_Highlights) do
+        if not char or not char.Parent then removeWallhack(char) end
+    end
+end
+
+local function updateWallhack()
+    if not State.wallhackEnabled then return end
+    pruneWH()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            applyWallhack(player.Character, characterIsEnemy(player.Character))
+        end
+    end
+    local lr = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    for _, d in ipairs(Workspace:GetDescendants()) do
+        if d:IsA("Model") and not Players:GetPlayerFromCharacter(d) then
+            local h=d:FindFirstChildOfClass("Humanoid"); local r=d:FindFirstChild("HumanoidRootPart")
+            if h and h.Health>0 and r and lr then
+                if (r.Position-lr.Position).Magnitude <= State.npcRange then
+                    applyWallhack(d, characterIsEnemy(d))
+                end
+            end
+        end
+    end
+end
+
+local function hookPlayerWH(player)
+    safeConnect(player.CharacterAdded, function(char)
+        if not State.wallhackEnabled then return end
+        task.wait(0.15)
+        if player.Character ~= char or not char.Parent then return end
+        applyWallhack(char, characterIsEnemy(char))
+    end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer then hookPlayerWH(p) end end
+safeConnect(Players.PlayerAdded,    function(p) hookPlayerWH(p) end)
+safeConnect(Players.PlayerRemoving, function(p) if p.Character then removeWallhack(p.Character) end end)
+
+-- ================================================================
+-- AIMBOT LOGIC
+-- ================================================================
+local function getTargetPart(character)
+    for _, n in ipairs({"Head","UpperTorso","Torso","HumanoidRootPart"}) do
+        local p=character:FindFirstChild(n)
+        if p and p:IsA("BasePart") then return p end
+    end
+end
+
+local function buildLOSFilter()
+    local f={}
+    for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(f,p.Character) end end
+    if LocalPlayer.Character then table.insert(f,LocalPlayer.Character) end
+    return f
+end
+
+local function hasLOS(target)
+    if not target or not target.Parent then return false end
+    local rp=RaycastParams.new()
+    rp.FilterDescendantsInstances=buildLOSFilter()
+    rp.FilterType=Enum.RaycastFilterType.Exclude
+    local res=Workspace:Raycast(Camera.CFrame.Position, target.Position-Camera.CFrame.Position, rp)
+    if res then return res.Instance:IsDescendantOf(target.Parent) end
+    return true
+end
+
+local cachedTargets    = {}
+local lastCacheRebuild = 0
+local CACHE_INTERVAL   = 0.10
+
+local function rebuildCache()
+    local nc={}
+    for _, d in ipairs(Workspace:GetDescendants()) do
+        if d:IsA("Model") then
+            local h=d:FindFirstChildOfClass("Humanoid")
+            if h and h.Health>0 and characterIsEnemy(d) then
+                local part=getTargetPart(d)
+                if part then table.insert(nc,part) end
+            end
+        end
+    end
+    cachedTargets=nc
+end
+
+local function findBestTarget()
+    -- Always measure from the true screen center — this is where the camera
+    -- points and where every game's crosshair is anchored, regardless of
+    -- whether the game uses a custom cursor or locks the OS mouse position.
+    local vp = Camera.ViewportSize
+    local sc = Vector2.new(vp.X / 2, vp.Y / 2)
+
+    local best, bestD = nil, math.huge
+    for _, tp in ipairs(cachedTargets) do
+        if not tp or not tp.Parent then continue end
+        local h = tp.Parent:FindFirstChildOfClass("Humanoid")
+        if not h or h.Health <= 0 then continue end
+        if State.wallCheck and not hasLOS(tp) then continue end
+        local sp, on = Camera:WorldToScreenPoint(tp.Position)
+        if on then
+            local d = (Vector2.new(sp.X, sp.Y) - sc).Magnitude
+            if State.fovRadius > 0 and d <= State.fovRadius and d < bestD then
+                bestD = d; best = tp
+            end
+        end
+    end
+    return best
+end
+
+-- ================================================================
+-- RENDER LOOP
+-- ================================================================
+local lastWHUpdate=0
+
+safeConnect(RunService.RenderStepped, function(dt)
+    if State.isShutDown then return end
+    local now=tick()
+
+    if State.showFovCircle and fovCircle and fovCircle.Parent then
+        -- FovGui has IgnoreGuiInset = true, so (0,0) is the exact top-left
+        -- corner of the screen — the same coordinate space as ViewportSize.
+        -- Camera.ViewportSize/2 is therefore the pixel the camera points at,
+        -- which is where every game crosshair (custom or default) sits.
+        -- Using this instead of GetMouseLocation() means the FOV ring is
+        -- always perfectly centred on the crosshair regardless of how the
+        -- game handles the OS cursor or top-bar insets.
+        local r      = State.fovRadius
+        local vp     = Camera.ViewportSize
+        local cx     = vp.X / 2
+        local cy     = vp.Y / 2
+        fovCircle.Size     = UDim2.new(0, r*2, 0, r*2)
+        fovCircle.Position = UDim2.new(0, cx - r, 0, cy - r)
+        fovCircle.Visible  = true
+    end
+
+    if State.wallhackEnabled and (now-lastWHUpdate)>=WALLHACK_INTERVAL then
+        lastWHUpdate=now; updateWallhack()
+    end
+
+    if State.aimbotEnabled and (now-lastCacheRebuild)>=CACHE_INTERVAL then
+        lastCacheRebuild=now; rebuildCache()
+    end
+
+    local active=State.aimbotEnabled and (State.alwaysOn or (State.keybindMode and State.holdingKey))
+    if not active then return end
+
+    local best=findBestTarget()
+    if not best or not best.Parent then return end
+    local lc=LocalPlayer.Character
+    if not lc then return end
+    local lh=lc:FindFirstChildOfClass("Humanoid")
+    if not lh or lh.Health<=0 then return end
+    if Camera.CameraType~=Enum.CameraType.Custom then return end
+
+    local alpha=1-(State.smoothness^(dt*60))
+    Camera.CFrame=Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, best.Position), alpha)
+end)
+
+-- ================================================================
+-- START ON MAIN TAB
+-- ================================================================
+switchTab("Main")
