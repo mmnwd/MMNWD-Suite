@@ -1,0 +1,146 @@
+-- wave script lol
+-- kill reward + capture spammer
+-- made this for a friend
+
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local me = Players.LocalPlayer
+
+-- debug label so i know it loaded
+local d = Instance.new("TextLabel")
+d.Size = UDim2.new(0, 350, 0, 30)
+d.Position = UDim2.new(0, 10, 0, 10)
+d.BackgroundColor3 = Color3.fromRGB(0,0,0)
+d.BackgroundTransparency = 0.5
+d.TextColor3 = Color3.fromRGB(0,255,0)
+d.Font = Enum.Font.GothamBold
+d.TextSize = 14
+d.Text = "loaded 👍"
+d.ZIndex = 999
+
+local parent = pcall(function() return me:WaitForChild("PlayerGui") end) and me.PlayerGui or game:GetService("CoreGui")
+d.Parent = parent
+
+-- main ui
+local gui = Instance.new("ScreenGui")
+gui.Name = "Rewards"
+gui.Parent = parent
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 280, 0, 280)
+frame.Position = UDim2.new(0.5, -140, 0.5, -140)
+frame.BackgroundColor3 = Color3.fromRGB(40,40,60)
+frame.BorderSizePixel = 1
+frame.BorderColor3 = Color3.fromRGB(200,200,200)
+frame.BackgroundTransparency = 0.1
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+-- title bar
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundColor3 = Color3.fromRGB(60,60,90)
+title.Text = "💰 spam rewards 💰"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.Parent = frame
+
+-- close button
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0,30,1,0)
+close.Position = UDim2.new(1,-30,0,0)
+close.BackgroundTransparency = 1
+close.Text = "X"
+close.TextColor3 = Color3.fromRGB(255,100,100)
+close.TextSize = 16
+close.Font = Enum.Font.GothamBold
+close.Parent = title
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    d:Destroy()
+end)
+
+-- helper to make input boxes
+function makeInput(txt, default, y)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.45,0,0,30)
+    label.Position = UDim2.new(0.05,0,0,y)
+    label.BackgroundTransparency = 1
+    label.Text = txt
+    label.TextColor3 = Color3.fromRGB(200,200,200)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.Parent = frame
+
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(0.4,0,0,30)
+    box.Position = UDim2.new(0.55,0,0,y)
+    box.BackgroundColor3 = Color3.fromRGB(30,30,50)
+    box.Text = tostring(default)
+    box.TextColor3 = Color3.fromRGB(255,255,255)
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 13
+    box.Parent = frame
+    return box
+end
+
+-- helper for buttons
+function makeBtn(text, y, cb, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Position = UDim2.new(0.05,0,0,y)
+    btn.BackgroundColor3 = color or Color3.fromRGB(70,70,100)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 13
+    btn.Parent = frame
+    btn.MouseButton1Click:Connect(cb)
+    return btn
+end
+
+-- get remotes
+local killRemote = RS:FindFirstChild("GiveKillReward")
+local captureRemote = RS:FindFirstChild("AddCapture")
+
+-- positions
+local yy = 40
+
+-- kill reward part
+local killCountBox = makeInput("kill reward count:", 1, yy)
+yy = yy + 36
+makeBtn("💀 claim kill reward (mass)", yy, function()
+    local n = tonumber(killCountBox.Text)
+    if not n or n < 1 then n = 1 end
+    if n > 500 then n = 500 end  -- dont be stupid
+    for i = 1, n do
+        pcall(function()
+            if killRemote then killRemote:FireServer(me.Name, 100) end
+        end)
+        task.wait(0.03)
+    end
+    d.Text = "✅ kill reward x" .. n
+end, Color3.fromRGB(0,180,100))
+yy = yy + 48
+
+-- capture part
+local capCountBox = makeInput("capture count:", 1, yy)
+yy = yy + 36
+makeBtn("📌 add capture (mass)", yy, function()
+    local n = tonumber(capCountBox.Text)
+    if not n or n < 1 then n = 1 end
+    if n > 500 then n = 500 end
+    for i = 1, n do
+        pcall(function()
+            if captureRemote then captureRemote:FireServer(me.Name, 10) end
+        end)
+        task.wait(0.03)
+    end
+    d.Text = "✅ capture added x" .. n
+end, Color3.fromRGB(100,150,200))
+
+-- all good
+print("loaded, click buttons")
+d.Text = "ready - set numbers and spam"
